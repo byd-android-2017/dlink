@@ -25,6 +25,7 @@ import com.dlink.gateway.config.AppConfig;
 import com.dlink.gateway.exception.GatewayException;
 import com.dlink.gateway.result.GatewayResult;
 import com.dlink.gateway.result.KubernetesResult;
+import com.dlink.model.SystemConfiguration;
 import com.dlink.utils.LogUtil;
 
 import org.apache.flink.client.deployment.ClusterSpecification;
@@ -74,15 +75,24 @@ public class KubernetesApplicationGateway extends KubernetesGateway {
         }
         ApplicationConfiguration applicationConfiguration = new ApplicationConfiguration(userJarParas, appConfig.getUserJarMainAppClass());
         KubernetesClusterDescriptor kubernetesClusterDescriptor = new KubernetesClusterDescriptor(configuration, client);
-        ClusterSpecification clusterSpecification = new ClusterSpecification.ClusterSpecificationBuilder()
-            .setMasterMemoryMB(configuration.get(JobManagerOptions.TOTAL_PROCESS_MEMORY).getMebiBytes())
-            .setTaskManagerMemoryMB(configuration.get(TaskManagerOptions.TOTAL_PROCESS_MEMORY).getMebiBytes())
-            .setSlotsPerTaskManager(configuration.get(TaskManagerOptions.NUM_TASK_SLOTS)).createClusterSpecification();
+
+        ClusterSpecification.ClusterSpecificationBuilder clusterSpecificationBuilder = new ClusterSpecification.ClusterSpecificationBuilder();
+        if (configuration.contains(JobManagerOptions.TOTAL_PROCESS_MEMORY)) {
+            clusterSpecificationBuilder.setMasterMemoryMB(configuration.get(JobManagerOptions.TOTAL_PROCESS_MEMORY).getMebiBytes());
+        }
+        if (configuration.contains(TaskManagerOptions.TOTAL_PROCESS_MEMORY)) {
+            clusterSpecificationBuilder.setTaskManagerMemoryMB(configuration.get(TaskManagerOptions.TOTAL_PROCESS_MEMORY).getMebiBytes());
+        }
+        if (configuration.contains(TaskManagerOptions.NUM_TASK_SLOTS)) {
+            clusterSpecificationBuilder.setSlotsPerTaskManager(configuration.get(TaskManagerOptions.NUM_TASK_SLOTS)).createClusterSpecification();
+        }
+
         try {
-            ClusterClientProvider<String> clusterClientProvider = kubernetesClusterDescriptor.deployApplicationCluster(clusterSpecification, applicationConfiguration);
+            ClusterClientProvider<String> clusterClientProvider = kubernetesClusterDescriptor.deployApplicationCluster(
+                clusterSpecificationBuilder.createClusterSpecification(), applicationConfiguration);
             ClusterClient<String> clusterClient = clusterClientProvider.getClusterClient();
             Collection<JobStatusMessage> jobStatusMessages = clusterClient.listJobs().get();
-            int counts = 10;
+            int counts = SystemConfiguration.getInstances().getJobIdWait();
             while (jobStatusMessages.size() == 0 && counts > 0) {
                 Thread.sleep(1000);
                 counts--;

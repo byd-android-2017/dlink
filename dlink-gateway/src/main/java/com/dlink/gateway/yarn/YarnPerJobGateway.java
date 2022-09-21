@@ -25,6 +25,7 @@ import com.dlink.gateway.config.GatewayConfig;
 import com.dlink.gateway.exception.GatewayException;
 import com.dlink.gateway.result.GatewayResult;
 import com.dlink.gateway.result.YarnResult;
+import com.dlink.model.SystemConfiguration;
 import com.dlink.utils.LogUtil;
 
 import org.apache.flink.client.deployment.ClusterSpecification;
@@ -69,19 +70,28 @@ public class YarnPerJobGateway extends YarnGateway {
         }
         YarnResult result = YarnResult.build(getType());
         YarnClusterDescriptor yarnClusterDescriptor = new YarnClusterDescriptor(
-                configuration, yarnConfiguration, yarnClient, YarnClientYarnClusterInformationRetriever.create(yarnClient), true);
-        ClusterSpecification clusterSpecification = new ClusterSpecification.ClusterSpecificationBuilder()
-            .setMasterMemoryMB(configuration.get(JobManagerOptions.TOTAL_PROCESS_MEMORY).getMebiBytes())
-            .setTaskManagerMemoryMB(configuration.get(TaskManagerOptions.TOTAL_PROCESS_MEMORY).getMebiBytes())
-            .setSlotsPerTaskManager(configuration.get(TaskManagerOptions.NUM_TASK_SLOTS)).createClusterSpecification();
+            configuration, yarnConfiguration, yarnClient, YarnClientYarnClusterInformationRetriever.create(yarnClient), true);
+
+        ClusterSpecification.ClusterSpecificationBuilder clusterSpecificationBuilder = new ClusterSpecification.ClusterSpecificationBuilder();
+        if (configuration.contains(JobManagerOptions.TOTAL_PROCESS_MEMORY)) {
+            clusterSpecificationBuilder.setMasterMemoryMB(configuration.get(JobManagerOptions.TOTAL_PROCESS_MEMORY).getMebiBytes());
+        }
+        if (configuration.contains(TaskManagerOptions.TOTAL_PROCESS_MEMORY)) {
+            clusterSpecificationBuilder.setTaskManagerMemoryMB(configuration.get(TaskManagerOptions.TOTAL_PROCESS_MEMORY).getMebiBytes());
+        }
+        if (configuration.contains(TaskManagerOptions.NUM_TASK_SLOTS)) {
+            clusterSpecificationBuilder.setSlotsPerTaskManager(configuration.get(TaskManagerOptions.NUM_TASK_SLOTS)).createClusterSpecification();
+        }
+
         try {
-            ClusterClientProvider<ApplicationId> clusterClientProvider = yarnClusterDescriptor.deployJobCluster(clusterSpecification, jobGraph, true);
+            ClusterClientProvider<ApplicationId> clusterClientProvider = yarnClusterDescriptor.deployJobCluster(
+                clusterSpecificationBuilder.createClusterSpecification(), jobGraph, true);
             ClusterClient<ApplicationId> clusterClient = clusterClientProvider.getClusterClient();
             ApplicationId applicationId = clusterClient.getClusterId();
             result.setAppId(applicationId.toString());
             result.setWebURL(clusterClient.getWebInterfaceURL());
             Collection<JobStatusMessage> jobStatusMessages = clusterClient.listJobs().get();
-            int counts = 10;
+            int counts = SystemConfiguration.getInstances().getJobIdWait();
             while (jobStatusMessages.size() == 0 && counts > 0) {
                 Thread.sleep(1000);
                 counts--;
