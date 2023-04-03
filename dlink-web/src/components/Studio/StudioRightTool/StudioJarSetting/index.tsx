@@ -20,24 +20,38 @@
 
 import {connect} from "umi";
 import {StateType} from "@/pages/DataStudio/model";
-import {Form, InputNumber, Input, Select, Tag, Row, Col, Badge, Tooltip, Button, Space} from "antd";
-import {InfoCircleOutlined, PlusOutlined, MinusSquareOutlined, MinusCircleOutlined,PaperClipOutlined} from "@ant-design/icons";
+import {Button, Col, Form, Input, InputNumber, message, Row, Select, Space, Tag, Tooltip, Upload} from "antd";
+import {
+  InfoCircleOutlined,
+  MinusCircleOutlined,
+  MinusSquareOutlined,
+  PlusOutlined,
+  UploadOutlined
+} from "@ant-design/icons";
 import styles from "./index.less";
-import {useEffect} from "react";
-import {JarStateType} from "@/pages/Jar/model";
+import React, {useEffect, useState} from "react";
+import {JarStateType} from "@/pages/RegistrationCenter/Jar/model";
 import {Scrollbars} from "react-custom-scrollbars";
 import {RUN_MODE} from "@/components/Studio/conf";
+import {CODE} from "@/components/Common/crud";
+import {
+  getHadoopConfigPathFromClusterConfigurationsById
+} from "@/pages/RegistrationCenter/ClusterManage/ClusterConfiguration/function";
+import {l} from "@/utils/intl";
 
 const {Option} = Select;
 
 const StudioJarSetting = (props: any) => {
 
-  const {clusterConfiguration, current, form, dispatch, tabs, jars,env, toolHeight} = props;
+  const {clusterConfiguration, current, form, dispatch, tabs, jars, toolHeight} = props;
+  const [hadoopConfigPath, setHadoopConfigPath] = useState<string | undefined>(undefined);
+  const [jarPath, setJarPath] = useState<string | undefined>(undefined);
 
   const getClusterConfigurationOptions = () => {
     const itemList = [];
     for (const item of clusterConfiguration) {
-      const tag = (<><Tag color={item.enabled ? "processing" : "error"}>{item.type}</Tag>{item.alias === "" ? item.name : item.alias}</>);
+      const tag = (<><Tag
+        color={item.enabled ? "processing" : "error"}>{item.type}</Tag>{item.name}</>);
       itemList.push(<Option key={item.id} value={item.id} label={tag}>
         {tag}
       </Option>)
@@ -48,7 +62,8 @@ const StudioJarSetting = (props: any) => {
   const getJarOptions = () => {
     const itemList = [];
     for (const item of jars) {
-      const tag = (<><Tag color={item.enabled ? "processing" : "error"}>{item.type}</Tag>{item.alias === "" ? item.name : item.alias}</>);
+      const tag = (<><Tag
+        color={item.enabled ? "processing" : "error"}>{item.type}</Tag>{item.name}</>);
       itemList.push(<Option key={item.id} value={item.id} label={tag}>
         {tag}
       </Option>)
@@ -58,8 +73,14 @@ const StudioJarSetting = (props: any) => {
 
   useEffect(() => {
     form.setFieldsValue(current.task);
+    setHadoopConfigPath(getHadoopConfigPathFromClusterConfigurationsById(current.task.clusterConfigurationId, clusterConfiguration));
+    for (let i in jars) {
+      if (jars[i].id == current.task.jarId) {
+        setJarPath(jars[i].path);
+        break;
+      }
+    }
   }, [current.task]);
-
 
   const onValuesChange = (change: any, all: any) => {
     const newTabs = tabs;
@@ -75,6 +96,49 @@ const StudioJarSetting = (props: any) => {
       type: "Studio/saveTabs",
       payload: newTabs,
     });
+    let clusterConfigurationId = all['clusterConfigurationId'];
+    let jarId = all['jarId'];
+    setHadoopConfigPath(getHadoopConfigPathFromClusterConfigurationsById(clusterConfigurationId, clusterConfiguration));
+    for (let i in jars) {
+      if (jars[i].id == jarId) {
+        setJarPath(jars[i].path);
+        break;
+      }
+    }
+  };
+
+  const getUploadHdfsProps = () => {
+    let dir = '';
+    if (jarPath) {
+      if (jarPath.indexOf('.jar') > -1) {
+        dir = jarPath.substring(0, jarPath.lastIndexOf('/'));
+      } else {
+        dir = jarPath;
+      }
+    }
+    return {
+      name: 'files',
+      action: '/api/fileUpload/hdfs',
+      headers: {
+        authorization: 'authorization-text',
+      },
+      data: {
+        dir,
+        hadoopConfigPath
+      },
+      showUploadList: true,
+      onChange(info) {
+        if (info.file.status === 'done') {
+          if (info.file.response.code == CODE.SUCCESS) {
+            message.success(info.file.response.msg);
+          } else {
+            message.warn(info.file.response.msg);
+          }
+        } else if (info.file.status === 'error') {
+          message.error(`${info.file.name}` + l('app.request.upload.failed'));
+        }
+      },
+    }
   };
 
   return (
@@ -82,7 +146,7 @@ const StudioJarSetting = (props: any) => {
       <Row>
         <Col span={24}>
           <div style={{float: "right"}}>
-            <Tooltip title="最小化">
+            <Tooltip title={l('component.minimize')}>
               <Button
                 type="text"
                 icon={<MinusSquareOutlined/>}
@@ -99,8 +163,8 @@ const StudioJarSetting = (props: any) => {
           onValuesChange={onValuesChange}
         >
           <Form.Item
-            label="执行模式" className={styles.form_item} name="type"
-            tooltip='指定 Flink 任务的执行模式，默认为 Local'
+            label={l('global.table.execmode')} className={styles.form_item} name="type"
+            tooltip={l('pages.datastudio.label.jobConfig.execmode.tip')}
           >
             <Select defaultValue={RUN_MODE.YARN_APPLICATION} value={RUN_MODE.YARN_APPLICATION}>
               <Option value={RUN_MODE.YARN_APPLICATION}>Yarn Application</Option>
@@ -108,12 +172,15 @@ const StudioJarSetting = (props: any) => {
           </Form.Item>
           <Row>
             <Col span={24}>
-              <Form.Item label="Flink集群配置" tooltip={`选择Flink集群配置进行 ${current.task.type} 模式的远程提交任务`}
+              <Form.Item label={l('pages.datastudio.label.jobConfig.clusterConfig')}
+                         tooltip={l('pages.datastudio.label.jobConfig.clusterConfig.tip1', '', {
+                           type: current.task.type
+                         })}
                          name="clusterConfigurationId"
                          className={styles.form_item}>
                 <Select
                   style={{width: '100%'}}
-                  placeholder="选择Flink集群配置"
+                  placeholder={l('pages.datastudio.label.jobConfig.clusterConfig.tip2')}
                   optionLabelProp="label"
                 >
                   {getClusterConfigurationOptions()}
@@ -121,57 +188,67 @@ const StudioJarSetting = (props: any) => {
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="可执行 Jar"
-                     tooltip={`选择可执行 Jar 进行 ${current.task.type} 模式的远程提交 Jar 任务。当该参数项存在值时，将只提交可执行 Jar.`}
-                     name="jarId"
+          <Form.Item label={<>{l('pages.datastudio.label.jobConfig.jar')} </>}
+                     tooltip={l('pages.datastudio.label.jobConfig.jar.tip1', '', {
+                       type: current.task.type
+                     })}
                      className={styles.form_item}>
-            <Select
-              style={{width: '100%'}}
-              placeholder="选择可执行Jar，非必填"
-              allowClear
-              optionLabelProp="label"
-            >
-              {getJarOptions()}
-            </Select>
+            <Form.Item name="jarId" noStyle>
+              <Select
+                style={{width: '80%'}}
+                placeholder={l('pages.datastudio.label.jobConfig.jar.tip2')}
+                allowClear
+                optionLabelProp="label"
+              >
+                {getJarOptions()}
+              </Select>
+            </Form.Item>
+            <Upload {...getUploadHdfsProps()} multiple>
+              <UploadOutlined/>
+            </Upload>
           </Form.Item>
           <Row>
             <Col span={12}>
-              <Form.Item label="CheckPoint" tooltip="设置Flink任务的检查点步长，0 代表不启用" name="checkPoint"
+              <Form.Item label={l('pages.datastudio.label.jobConfig.checkPoint')}
+                         tooltip={l('pages.datastudio.label.jobConfig.checkPoint.tip')} name="checkPoint"
                          className={styles.form_item}>
                 <InputNumber min={0} max={999999} defaultValue={0}/>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                label="Parallelism" className={styles.form_item} name="parallelism"
-                tooltip="设置Flink任务的并行度，最小为 1"
+                label={l('pages.datastudio.label.jobConfig.parallelism')} className={styles.form_item}
+                name="parallelism"
+                tooltip={l('pages.datastudio.label.jobConfig.parallelism.tip')}
               >
                 <InputNumber min={1} max={9999} defaultValue={1}/>
               </Form.Item>
             </Col>
           </Row>
           <Form.Item
-            label="SavePoint策略" className={styles.form_item} name="savePointStrategy"
-            tooltip='指定 SavePoint策略，默认为禁用'
+            label={l('pages.datastudio.label.jobConfig.savePointStrategy')} className={styles.form_item}
+            name="savePointStrategy"
+            tooltip={l('pages.datastudio.label.jobConfig.savePointStrategy.tip')}
           >
             <Select defaultValue={0}>
-              <Option value={0}>禁用</Option>
-              <Option value={1}>最近一次</Option>
-              <Option value={2}>最早一次</Option>
-              <Option value={3}>指定一次</Option>
+              <Option value={0}>{l('global.savepoint.strategy.disabled')}</Option>
+              <Option value={1}>{l('global.savepoint.strategy.latest')}</Option>
+              <Option value={2}>{l('global.savepoint.strategy.earliest')}</Option>
+              <Option value={3}>{l('global.savepoint.strategy.custom')}</Option>
             </Select>
           </Form.Item>
           {current.task.savePointStrategy === 3 ?
             (<Form.Item
-              label="SavePointPath" className={styles.form_item} name="savePointPath"
-              tooltip='从SavePointPath恢复Flink任务'
+              label={l('pages.datastudio.label.jobConfig.savePointpath')} className={styles.form_item}
+              name="savePointPath"
+              tooltip={l('pages.datastudio.label.jobConfig.savePointpath.tip1')}
             >
-              <Input placeholder="hdfs://..."/>
+              <Input placeholder={l('pages.datastudio.label.jobConfig.savePointpath.tip2')}/>
             </Form.Item>) : ''
           }
           <Form.Item
-            label="其他配置" className={styles.form_item}
-            tooltip={{title: '其他配置项，将被应用于执行环境，如 pipeline.name', icon: <InfoCircleOutlined/>}}
+            label={l('pages.datastudio.label.jobConfig.other')} className={styles.form_item}
+            tooltip={{title: l('pages.datastudio.label.jobConfig.other.tip'), icon: <InfoCircleOutlined/>}}
           >
 
             <Form.List name="config"
@@ -185,21 +262,21 @@ const StudioJarSetting = (props: any) => {
                         name={[name, 'key']}
                         style={{marginBottom: '5px'}}
                       >
-                        <Input placeholder="参数"/>
+                        <Input placeholder={l('pages.datastudio.label.jobConfig.addConfig.params')}/>
                       </Form.Item>
                       <Form.Item
                         {...restField}
                         name={[name, 'value']}
                         style={{marginBottom: '5px'}}
                       >
-                        <Input placeholder="值"/>
+                        <Input placeholder={l('pages.datastudio.label.jobConfig.addConfig.value')}/>
                       </Form.Item>
                       <MinusCircleOutlined onClick={() => remove(name)}/>
                     </Space>
                   ))}
                   <Form.Item>
                     <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined/>}>
-                      添加配置项
+                      {l('pages.datastudio.label.jobConfig.addConfig')}
                     </Button>
                   </Form.Item>
                 </>

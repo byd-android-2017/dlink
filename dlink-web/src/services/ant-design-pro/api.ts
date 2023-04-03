@@ -17,11 +17,7 @@
  *
  */
 
-
-// @ts-ignore
-/* eslint-disable */
-import {request} from 'umi';
-
+import {request} from "umi";
 
 /** 获取当前的用户 GET /api/currentUser */
 export async function currentUser(options?: { [key: string]: any }) {
@@ -43,15 +39,20 @@ export async function outLogin(options?: { [key: string]: any }) {
 export async function login(body: API.LoginParams, options?: { [key: string]: any }) {
   return request<API.Result>('/api/login', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     data: body,
-    ...(options || {}),
+    ...(options  || {}),
   });
 }
 
-/** 此处后端没有提供注释 GET /api/notices */
-export async function getNotices(options?: { [key: string]: any }) {
-  return request<API.NoticeIconList>('/api/notices', {
-    method: 'GET',
-    ...(options || {}),
+/** 获取当前的用户 GET /api/current */
+export function chooseTenantSubmit(params: { tenantId: number }) {
+  return request<API.Result>('/api/chooseTenant', {
+    method: 'POST',
+    params: {
+      ...(params || {}),
+    },
   });
 }

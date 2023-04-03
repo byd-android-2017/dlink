@@ -17,37 +17,18 @@
  *
  */
 
-
-import {
-  AlipayCircleOutlined,
-  LockOutlined,
-  MobileOutlined,
-  TaobaoCircleOutlined,
-  UserOutlined,
-  WeiboCircleOutlined,
-} from '@ant-design/icons';
-import { Alert, Space, message, Tabs } from 'antd';
-import React, { useState } from 'react';
-import ProForm, { ProFormCaptcha, ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
-import { useIntl, Link, history, FormattedMessage, SelectLang, useModel } from 'umi';
+import {LockOutlined, UserOutlined} from '@ant-design/icons';
+import {Button, message, Modal} from 'antd';
+import React, {useState} from 'react';
+import {LoginForm, ProFormCheckbox, ProFormText} from '@ant-design/pro-form';
+import {history, Link, SelectLang, useModel} from 'umi';
 import Footer from '@/components/Footer';
-import { login } from '@/services/ant-design-pro/api';
-import { getFakeCaptcha } from '@/services/ant-design-pro/login';
-
+import {chooseTenantSubmit, login} from '@/services/ant-design-pro/api';
+import {CheckCard} from '@ant-design/pro-components';
 import styles from './index.less';
-
-const LoginMessage: React.FC<{
-  content: string;
-}> = ({ content }) => (
-  <Alert
-    style={{
-      marginBottom: 24,
-    }}
-    message={content}
-    type="error"
-    showIcon
-  />
-);
+import {l} from '@/utils/intl';
+import cookies from 'js-cookie';
+import {setLocale} from '@@/plugin-locale/localeExports';
 
 /** 此方法会跳转到 redirect 参数所在的位置 */
 const goto = () => {
@@ -61,12 +42,12 @@ const goto = () => {
 
 const Login: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
-  const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
-  const [type, setType] = useState<string>('password');
-  const { initialState, setInitialState } = useModel('@@initialState');
-  const [isLogin, setIsLogin] = useState<boolean>(true);
+  const {initialState, setInitialState} = useModel('@@initialState');
+  const [tenantVisible, handleTenantVisible] = useState<boolean>(false);
+  const [checkDisabled, setCheckDisabled] = useState<boolean>(true);
+  const [tenant, setTenant] = useState<API.Tenant[]>([]);
+  const [tenantIdParams, setTenantIdParams] = useState<number>();
 
-  const intl = useIntl();
 
   const fetchUserInfo = async () => {
     const userInfo = await initialState?.fetchUserInfo?.();
@@ -78,157 +59,226 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (values: API.LoginParams) => {
-    if(!isLogin) {return;}
-    setIsLogin(false);
-    setTimeout(()=>{setIsLogin(true)},200);
-    setSubmitting(true);
-    try {
-      // 登录
-      const msg = await login({ ...values, type });
-      if (msg.code === 0 && msg.datas!=undefined ) {
-        const defaultloginSuccessMessage = intl.formatMessage({
-          id: 'pages.login.success',
-          defaultMessage: '登录成功！',
-        });
-        message.success(defaultloginSuccessMessage);
-        await fetchUserInfo();
-        goto();
-        return;
-      }else{
-        const defaultloginFailureMessage = intl.formatMessage({
-          id: msg.msg,
-          defaultMessage: msg.msg,
-        });
-        message.error(defaultloginFailureMessage);
-      }
-      // 如果失败去设置用户错误信息
-      setUserLoginState(msg.datas);
-    } catch (error) {
-      const defaultloginFailureMessage = intl.formatMessage({
-        id: 'pages.login.failure',
-        defaultMessage: '登录失败，请重试！',
-      });
 
-      message.error(defaultloginFailureMessage);
-    }
-    setSubmitting(false);
+  const setTenantCookie = (tenantId: number) => {
+    localStorage.setItem('dlink-tenantId', tenantId.toString()); // 放入本地存储中 request2请求时会放入header
+    cookies.set('tenantId', tenantId.toString(), {path: '/'}); // 放入cookie中
   };
-  //const {code } = userLoginState;
+
+  const handleChooseTenant = async (chooseTenantResult: API.Result) => {
+    if (chooseTenantResult.code === 0) {
+      message.success(l('pages.login.chooseTenantSuccess', '', {
+        msg: chooseTenantResult.msg,
+        tenantCode: chooseTenantResult.datas.tenantCode
+      }));
+
+      /**
+       * After the selection is complete, refresh all user information
+       */
+      await fetchUserInfo();
+
+      goto()
+
+    } else {
+      message.error(l('pages.login.chooseTenantFailed'))
+      return;
+    }
+  }
+
+  const handleSubmit = async (values: API.LoginParams) => {
+    try {
+      // login
+      const result = await login({...values});
+      if (result.code === 0) {
+        message.success(l('pages.login.result', '', {msg: result.msg, time: result.time}));
+        /**
+         * After successful login, set the tenant list
+         */
+        const tenantList: API.Tenant[] = result.datas.tenantList
+        if (tenantList === null || tenantList.length === 0) {
+          message.error('该用户未绑定租户');
+          return;
+        } else {
+          setTenant(tenantList);
+        }
+
+        /**
+         * Determine whether the current tenant list is multiple
+         * 1. If there are multiple execution pop-up modals, the user selects a specific tenant to enter the system
+         * 2. If it is a single, only use the unique tenant id to enter the system directly
+         */
+
+        if (tenantList && tenantList.length > 1) {
+          handleTenantVisible(true);
+        } else {
+          setTenantIdParams(tenantList[0].id as number)
+          setTenantCookie(tenantList[0].id as number);
+          const chooseTenantResult: API.Result = await chooseTenantSubmit({tenantId: tenantList[0].id as number});
+          await handleChooseTenant(chooseTenantResult)
+        }
+        return;
+      } else {
+        /**
+         * If it fails to set the user error message
+         */
+        message.error(l('pages.login.result', '', {msg: result.msg, time: result.time}));
+      }
+    } catch (error) {
+      message.error(l('pages.login.error', '', {msg: error}));
+    }
+  };
+
+
+  const handleShowTenant = () => {
+    return (
+      <>
+        <Modal
+          title={l('pages.login.chooseTenant')}
+          open={tenantVisible}
+          destroyOnClose={true}
+          width={'60%'}
+          onCancel={() => {
+            handleTenantVisible(false);
+          }}
+          footer={[
+            <Button
+              key="back"
+              onClick={() => {
+                handleTenantVisible(false);
+              }}
+            >
+              {l('button.close')}
+            </Button>,
+            <Button
+              disabled={checkDisabled}
+              type="primary"
+              key="submit"
+              loading={submitting}
+              onClick={async () => {
+                setSubmitting(true)
+                const result = await chooseTenantSubmit({tenantId: tenantIdParams as number});
+                await handleChooseTenant(result)
+                handleTenantVisible(false);
+              }}
+            >
+              {l('button.confirm')}
+            </Button>,
+          ]}
+        >
+          <CheckCard.Group
+            multiple={false}
+            onChange={(value) => {
+              if (value) {
+                setCheckDisabled(false); // 如果没选择租户 ·确认按钮· 则禁用
+                setTenantCookie(value as number);
+                setTenantIdParams(value as number)
+              } else {
+                setCheckDisabled(true);
+              }
+            }}
+          >
+            {tenant?.map((item: any) => {
+              return (
+                <CheckCard
+                  size={'default'}
+                  key={item?.id}
+                  avatar="/icons/tenant_default.svg"
+                  title={item?.tenantCode}
+                  value={item?.id}
+                  description={item?.note}
+                />
+              );
+            })}
+          </CheckCard.Group>
+        </Modal>
+      </>
+    );
+  };
 
   return (
     <div className={styles.container}>
-      <div className={styles.lang}>{SelectLang && <SelectLang />}</div>
+      <div className={styles.lang}>
+        {SelectLang && (
+          <SelectLang
+            onItemClick={(e) => {
+              let language = e.key.toString();
+              if (language === undefined || language === '') {
+                language = localStorage.getItem('umi_locale');
+              }
+              cookies.set('language', language, {path: '/'});
+              setLocale(language);
+            }}
+          />
+        )}
+      </div>
       <div className={styles.content}>
         <div className={styles.top}>
           <div className={styles.header}>
             <Link to="/">
-              <img alt="logo" className={styles.logo} src="/dinky.svg" />
+              <img alt="logo" className={styles.logo} src="/dinky.svg"/>
               <span className={styles.title}>Dinky</span>
             </Link>
           </div>
-          <div className={styles.desc}>
-            {intl.formatMessage({ id: 'pages.layouts.userLayout.title' })}
-          </div>
+          <div className={styles.desc}>{l('pages.layouts.userLayout.title')}</div>
         </div>
 
         <div className={styles.main}>
-          <ProForm
+          <LoginForm
+            contentStyle={{
+              minWidth: 280,
+              maxWidth: '75vw',
+            }}
             initialValues={{
               autoLogin: true,
             }}
-            submitter={{
-              searchConfig: {
-                submitText: intl.formatMessage({
-                  id: 'pages.login.submit',
-                  defaultMessage: '登录',
-                }),
-              },
-              render: (_, dom) => dom.pop(),
-              submitButtonProps: {
-                loading: submitting,
-                size: 'large',
-                style: {
-                  width: '100%',
-                },
-                htmlType:'submit',
-              },
-            }}
             onFinish={async (values) => {
-              values.grant_type = 'password';
-              handleSubmit(values as API.LoginParams);
+              await handleSubmit(values as API.LoginParams);
             }}
           >
-            {type === 'password' && (
-              <>
-                <ProFormText
-                  name="username"
-                  fieldProps={{
-                    size: 'large',
-                    prefix: <UserOutlined className={styles.prefixIcon} />,
-                  }}
-                  placeholder={intl.formatMessage({
-                    id: 'pages.login.username.placeholder',
-                    defaultMessage: '用户名:',
-                  })}
-                  rules={[
-                    {
-                      required: true,
-                      message: (
-                        <FormattedMessage
-                          id="pages.login.username.required"
-                          defaultMessage="请输入用户名!"
-                        />
-                      ),
-                    },
-                  ]}
-                />
-                <ProFormText.Password
-                  name="password"
-                  fieldProps={{
-                    size: 'large',
-                    prefix: <LockOutlined className={styles.prefixIcon} />,
-                  }}
-                  placeholder={intl.formatMessage({
-                    id: 'pages.login.password.placeholder',
-                    defaultMessage: '密码:',
-                  })}
-                  rules={[
-                    {
-                      required: true,
-                      message: (
-                        <FormattedMessage
-                          id="pages.login.password.required"
-                          defaultMessage="请输入密码！"
-                        />
-                      ),
-                    },
-                  ]}
-                />
-              </>
-            )}
-
-
+            <>
+              <ProFormText
+                name="username"
+                fieldProps={{
+                  size: 'large',
+                  prefix: <UserOutlined/>,
+                }}
+                placeholder={l('pages.login.username.placeholder')}
+                rules={[
+                  {
+                    required: true,
+                    message: l('pages.login.username.required'),
+                  },
+                ]}
+              />
+              <ProFormText.Password
+                name="password"
+                fieldProps={{
+                  size: 'large',
+                  prefix: <LockOutlined/>,
+                }}
+                placeholder={l('pages.login.password.placeholder')}
+                rules={[
+                  {
+                    required: true,
+                    message: l('pages.login.password.required'),
+                  },
+                ]}
+              />
+            </>
             <div
               style={{
                 marginBottom: 24,
               }}
             >
               <ProFormCheckbox noStyle name="autoLogin">
-                <FormattedMessage id="pages.login.rememberMe" defaultMessage="自动登录" />
+                {l('pages.login.rememberMe')}
               </ProFormCheckbox>
-              <a
-                style={{
-                  float: 'right',
-                }}
-              >
-                <FormattedMessage id="pages.login.forgotPassword" defaultMessage="忘记密码" />
-              </a>
             </div>
-          </ProForm>
+          </LoginForm>
         </div>
       </div>
-      <Footer />
+      <Footer/>
+      {handleShowTenant()}
     </div>
   );
 };

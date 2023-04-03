@@ -23,6 +23,7 @@ import {SearchOutlined} from '@ant-design/icons';
 import ProTable from '@ant-design/pro-table';
 import {getData} from "@/components/Common/crud";
 import {Button, Input, Space} from "antd";
+import {l} from "@/utils/intl";
 
 const DTable = (props: any) => {
 
@@ -94,7 +95,8 @@ const DTable = (props: any) => {
       dataSource={dataSource ? (dataSource.url ? data : dataSource) : []}
       rowKey="name"
       pagination={{
-        pageSize: 10,
+        defaultPageSize: 10,
+        showSizeChanger: true,
       }}
       toolBarRender={false}
       search={false}
@@ -109,7 +111,7 @@ export const getColumnSearchProps = (dIndex) => ({
   filterDropdown: ({setSelectedKeys, selectedKeys, confirm, clearFilters}) => (
     <div style={{padding: 8}}>
       <Input
-        placeholder={`请输入关键字`}
+        placeholder={l('pages.searchTable.keyword')}
         value={selectedKeys[0]}
         onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
         onPressEnter={() => handleSearch(selectedKeys, confirm, dIndex)}
@@ -123,10 +125,10 @@ export const getColumnSearchProps = (dIndex) => ({
           size="small"
           style={{width: 90}}
         >
-          搜索
+          {l('button.search')}
         </Button>
         <Button onClick={() => handleReset(clearFilters)} size="small" style={{width: 90}}>
-          重置
+          {l('button.reset')}
         </Button>
       </Space>
     </div>

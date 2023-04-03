@@ -22,6 +22,7 @@ import React, {useState} from 'react';
 import {Button, Form, Input, Modal} from 'antd';
 
 import type {CatalogueTableListItem} from '../data.d';
+import {l} from "@/utils/intl";
 
 export type UpdateFormProps = {
   onCancel: (flag?: boolean, formVals?: Partial<CatalogueTableListItem>) => void;
@@ -38,6 +39,7 @@ const formLayout = {
 };
 
 const UpdateCatalogueForm: React.FC<UpdateFormProps> = (props) => {
+
   const [formVals, setFormVals] = useState<Partial<CatalogueTableListItem>>({
     id: props.values.id,
     taskId: props.values.taskId,
@@ -78,9 +80,9 @@ const UpdateCatalogueForm: React.FC<UpdateFormProps> = (props) => {
   const renderFooter = () => {
     return (
       <>
-        <Button onClick={() => handleUpdateModalVisible(false, values)}>取消</Button>
+        <Button onClick={() => handleUpdateModalVisible(false, values)}>{l('button.cancel')}</Button>
         <Button type="primary" onClick={() => submitForm()}>
-          完成
+          {l('button.finish')}
         </Button>
       </>
     );

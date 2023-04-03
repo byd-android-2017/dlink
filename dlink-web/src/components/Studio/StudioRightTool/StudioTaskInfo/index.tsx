@@ -20,18 +20,16 @@
 
 import {connect} from "umi";
 import {StateType} from "@/pages/DataStudio/model";
-import {
-  Form, Row, Col, Tooltip, Button, Input, Descriptions, Typography
-} from "antd";
+import {Button, Col, Descriptions, Form, Input, Row, Tooltip, Typography} from "antd";
 import {MinusSquareOutlined} from "@ant-design/icons";
 import styles from "./index.less";
 import {Scrollbars} from 'react-custom-scrollbars';
+import {l} from "@/utils/intl";
 
 const {TextArea} = Input;
 const {Paragraph} = Typography;
 
 const StudioTaskInfo = (props: any) => {
-
   const {current, form, dispatch, tabs, toolHeight} = props;
 
   form.setFieldsValue(current.task);
@@ -58,7 +56,7 @@ const StudioTaskInfo = (props: any) => {
       <Row>
         <Col span={24}>
           <div style={{float: "right"}}>
-            <Tooltip title="最小化">
+            <Tooltip title={l('component.minimize')}>
               <Button
                 type="text"
                 icon={<MinusSquareOutlined/>}
@@ -69,22 +67,22 @@ const StudioTaskInfo = (props: any) => {
       </Row>
       <Scrollbars style={{height: (toolHeight - 32)}}>
         <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="ID">
+          <Descriptions.Item label={l('pages.datastudio.label.jobInfo.id')}>
             <Paragraph copyable>{current.task.id}</Paragraph>
           </Descriptions.Item>
-          <Descriptions.Item label="标题">
-            {current.task.alias}
+          <Descriptions.Item label={l('pages.datastudio.label.jobInfo.name')}>
+            {current.task.jobName}
           </Descriptions.Item>
-          <Descriptions.Item label="方言">
+          <Descriptions.Item label={l('pages.datastudio.label.jobInfo.dialect')}>
             {current.task.dialect}
           </Descriptions.Item>
-          <Descriptions.Item label="版本">
+          <Descriptions.Item label={l('pages.datastudio.label.jobInfo.versionId')}>
             {current.task.versionId}
           </Descriptions.Item>
-          <Descriptions.Item label="创建于">
+          <Descriptions.Item label={l('global.table.createTime')}>
             {current.task.createTime}
           </Descriptions.Item>
-          <Descriptions.Item label="更新于">
+          <Descriptions.Item label={l('global.table.updateTime')}>
             {current.task.updateTime}
           </Descriptions.Item>
         </Descriptions>
@@ -97,7 +95,7 @@ const StudioTaskInfo = (props: any) => {
           <Row>
             <Col span={24}>
               <Form.Item
-                label="备注" className={styles.form_item} name="note"
+                label={l('global.table.note')} className={styles.form_item} name="note"
               >
                 <TextArea rows={4} maxLength={255}/>
               </Form.Item>

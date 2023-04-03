@@ -18,17 +18,25 @@
  */
 
 
-import {Button, Empty, Modal, Select, Tabs, Tag, Tree} from "antd";
+import {Button, Col, Empty, Modal, Row, Select, Spin, Tabs, Tag, Tooltip, Tree} from "antd";
 import {StateType} from "@/pages/DataStudio/model";
 import {connect} from "umi";
 import React, {useState} from "react";
-import {CodepenOutlined, DatabaseOutlined, DownOutlined, OrderedListOutlined, TableOutlined} from '@ant-design/icons';
-import {showMetaDataTable} from "@/components/Studio/StudioEvent/DDL";
+import {
+  CodepenOutlined,
+  DatabaseOutlined,
+  DownOutlined,
+  OrderedListOutlined,
+  ReloadOutlined,
+  TableOutlined
+} from '@ant-design/icons';
+import {clearMetaDataTable, showMetaDataTable} from "@/components/Studio/StudioEvent/DDL";
 import {Scrollbars} from 'react-custom-scrollbars';
-import Columns from "@/pages/DataBase/Columns";
-import Tables from "@/pages/DataBase/Tables";
+import Columns from "@/pages/RegistrationCenter/DataBase/Columns";
+import Tables from "@/pages/RegistrationCenter/DataBase/Tables";
 import {TreeDataNode} from "@/components/Studio/StudioTree/Function";
-import Generation from "@/pages/DataBase/Generation";
+import Generation from "@/pages/RegistrationCenter/DataBase/Generation";
+import {l} from "@/utils/intl";
 
 const {DirectoryTree} = Tree;
 const {Option} = Select;
@@ -41,12 +49,19 @@ const StudioMetaData = (props: any) => {
   const [treeData, setTreeData] = useState<[]>([]);
   const [modalVisit, setModalVisit] = useState(false);
   const [row, setRow] = useState<TreeDataNode>();
+  const [loadingDatabase, setloadingDatabase] = useState(false);
 
   const onRefreshTreeData = (databaseId: number) => {
-    if (!databaseId) return;
+    if (!databaseId) {
+      setloadingDatabase(false);
+      return;
+    }
+    setloadingDatabase(true);
+
     setDatabaseId(databaseId);
     const res = showMetaDataTable(databaseId);
     res.then((result) => {
+      setloadingDatabase(false);
       let tables = result.datas;
       if (tables) {
         for (let i = 0; i < tables.length; i++) {
@@ -75,10 +90,10 @@ const StudioMetaData = (props: any) => {
   };
 
   const getDataBaseOptions = () => {
-    return <>{database.map(({id, name, alias, type, enabled}) => (
+    return <>{database.map(({id, name, type, enabled}) => (
       <Option value={id}
-              label={<><Tag color={enabled ? "processing" : "error"}>{type}</Tag>{alias === "" ? name : alias}</>}>
-        <Tag color={enabled ? "processing" : "error"}>{type}</Tag>{alias === "" ? name : alias}
+              label={<><Tag color={enabled ? "processing" : "error"}>{type}</Tag>{name}</>}>
+        <Tag color={enabled ? "processing" : "error"}>{type}</Tag>{name}
       </Option>
     ))}</>
   };
@@ -94,17 +109,42 @@ const StudioMetaData = (props: any) => {
     setRow(undefined);
     setModalVisit(false);
   }
+  const refeshDataBase = (value: number) => {
+    if (!databaseId) return;
+    setloadingDatabase(true);
+    clearMetaDataTable(databaseId).then(result => {
+      onChangeDataBase(databaseId);
+    })
+  };
 
   return (
-    <>
-      <Select
-        style={{width: '90%'}}
-        placeholder="选择数据源"
-        optionLabelProp="label"
-        onChange={onChangeDataBase}
-      >
-        {getDataBaseOptions()}
-      </Select>
+
+    <Spin spinning={loadingDatabase} delay={500}>
+      <Row>
+        <Col span={24}>
+          <Tooltip title={l('button.refresh')}>
+            <Button type="text"
+                    icon={<ReloadOutlined/>}
+                    onClick={() => {
+                      refeshDataBase(databaseId)
+                    }}
+            />
+          </Tooltip>
+        </Col>
+      </Row>
+      <Row>
+        <Col span={18}>
+          <Select
+            style={{width: '90%'}}
+            placeholder={l('pages.metadata.selectDatabase')}
+            optionLabelProp="label"
+            onChange={onChangeDataBase}
+          >
+            {getDataBaseOptions()}
+          </Select>
+        </Col>
+      </Row>
+
       <Scrollbars style={{height: (toolHeight - 32)}}>
         {treeData.length > 0 ? (
           <DirectoryTree
@@ -127,7 +167,7 @@ const StudioMetaData = (props: any) => {
           <Button key="back" onClick={() => {
             cancelHandle();
           }}>
-            关闭
+            {l('button.close')}
           </Button>,
         ]}
       >
@@ -136,7 +176,7 @@ const StudioMetaData = (props: any) => {
             tab={
               <span>
           <TableOutlined/>
-          表信息
+                {l('pages.metadata.TableInfo')}
         </span>
             }
             key="tableInfo"
@@ -147,7 +187,7 @@ const StudioMetaData = (props: any) => {
             tab={
               <span>
           <CodepenOutlined/>
-          字段信息
+                {l('pages.metadata.FieldInformation')}
         </span>
             }
             key="columnInfo"
@@ -159,7 +199,7 @@ const StudioMetaData = (props: any) => {
             tab={
               <span>
           <OrderedListOutlined/>
-          SQL 生成
+                {l('pages.metadata.GenerateSQL')}
         </span>
             }
             key="sqlGeneration"
@@ -169,7 +209,7 @@ const StudioMetaData = (props: any) => {
           </TabPane>
         </Tabs>
       </Modal>
-    </>
+    </Spin>
   );
 };
 

@@ -27,6 +27,7 @@ export type CodeShowFormProps = {
   theme?: string;
   options?: any;
   code: string;
+  editorDidMountHandle?: any;
 };
 
 const CodeShow = (props: CodeShowFormProps) => {
@@ -41,10 +42,11 @@ const CodeShow = (props: CodeShowFormProps) => {
       renderSideBySide: false,
       autoIndent: 'None',
       readOnly: true,
+      automaticLayout: true,
     },
     code,
+    editorDidMountHandle,
   } = props;
-
 
   return (<>
     <MonacoEditor
@@ -53,7 +55,8 @@ const CodeShow = (props: CodeShowFormProps) => {
       language={language}
       value={code}
       options={options}
-      theme={theme}
+      theme='vs-dark'
+      editorDidMount={editorDidMountHandle}
     />
   </>)
 };

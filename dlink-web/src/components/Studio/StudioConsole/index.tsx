@@ -18,129 +18,140 @@
  */
 
 
-import {Tabs, Empty} from "antd";
+import { Empty, Tabs } from "antd";
 import {
-  CodeOutlined, TableOutlined, RadarChartOutlined, CalendarOutlined, FileSearchOutlined, DesktopOutlined
-  , FunctionOutlined, ApartmentOutlined,BarChartOutlined
+  ApartmentOutlined,
+  BarChartOutlined,
+  CalendarOutlined,
+  CodeOutlined,
+  DesktopOutlined, PrinterOutlined,
+  TableOutlined
 } from "@ant-design/icons";
-import {StateType} from "@/pages/DataStudio/model";
-import {connect} from "umi";
-import styles from "./index.less";
+import { StateType } from "@/pages/DataStudio/model";
+import { connect } from "umi";
 import StudioMsg from "./StudioMsg";
 import StudioTable from "./StudioTable";
 import StudioHistory from "./StudioHistory";
-import StudioFX from "./StudioFX";
+import StudioData from "./StudioData"
 import StudioCA from "./StudioCA";
 import StudioProcess from "./StudioProcess";
-import {Scrollbars} from 'react-custom-scrollbars';
+import { Scrollbars } from 'react-custom-scrollbars';
 import Chart from "@/components/Chart";
+import React, { useState } from "react";
+import { l } from "@/utils/intl";
 
-const {TabPane} = Tabs;
+const { TabPane } = Tabs;
 
 const StudioConsole = (props: any) => {
 
-  const {height,current} = props;
+
+
+  const { height, current } = props;
   let consoleHeight = (height - 37.6);
+  const [activeKey, setActiveKey] = useState<string>("StudioMsg");
+
+  const onTabsChange = (key: string) => {
+    setActiveKey(key);
+  }
+
   return (
     <Tabs defaultActiveKey="StudioMsg" size="small" tabPosition="top" style={{
       border: "1px solid #f0f0f0", height: height, margin: "0 32px"
-    }}>
+    }} onChange={onTabsChange}>
       <TabPane
         tab={
           <span>
-          <CodeOutlined/>
-          信息
-        </span>
+            <CodeOutlined />
+            {l('pages.datastudio.label.info')}
+          </span>
         }
         key="StudioMsg"
       >
-        <Scrollbars style={{height: consoleHeight}}>
-          {current?<StudioMsg/>:<Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>}
+        <Scrollbars style={{ height: consoleHeight }}>
+          <StudioMsg height={consoleHeight} isActive={activeKey === "StudioMsg"} />
         </Scrollbars>
       </TabPane>
       <TabPane
         tab={
           <span>
-          <TableOutlined/>
-          结果
-        </span>
+            <TableOutlined />
+            {l('pages.datastudio.label.result')}
+          </span>
         }
         key="StudioTable"
       >
-        <Scrollbars style={{height: consoleHeight}}>
-          {current?<StudioTable/>:<Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>}
+        <Scrollbars style={{ height: consoleHeight }}>
+          {current ? <StudioTable /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         </Scrollbars>
       </TabPane>
       <TabPane
         tab={
           <span>
-          <BarChartOutlined />
-          BI
-        </span>
+            <BarChartOutlined />
+            BI
+          </span>
         }
         key="StudioChart"
       >
-        <Scrollbars style={{height: consoleHeight}}>
-          {current? <Chart height={consoleHeight} />:<Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>}
+        <Scrollbars style={{ height: consoleHeight }}>
+          {current ? <Chart height={consoleHeight} /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         </Scrollbars>
       </TabPane>
       <TabPane
         tab={
           <span>
-          <ApartmentOutlined/>
-          血缘
-        </span>
+            <ApartmentOutlined />
+            {l('pages.datastudio.label.lineage')}
+          </span>
         }
         key="StudioConsanguinity"
       >
-        <Scrollbars style={{height: consoleHeight}}>
-          {current?<StudioCA/>:<Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>}
+        <Scrollbars style={{ height: consoleHeight }}>
+          {current ? <StudioCA /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         </Scrollbars>
       </TabPane>
       <TabPane
         tab={
           <span>
-          <DesktopOutlined/>
-          进程
-        </span>
+            <DesktopOutlined />
+            {l('pages.datastudio.label.process')}
+          </span>
         }
         key="StudioProcess"
       >
-        <Scrollbars style={{height: consoleHeight}}>
-          <StudioProcess/>
+        <Scrollbars style={{ height: consoleHeight }}>
+          <StudioProcess />
         </Scrollbars>
       </TabPane>
       <TabPane
         tab={
           <span>
-          <CalendarOutlined/>
-          历史
-        </span>
+            <CalendarOutlined />
+            {l('pages.datastudio.label.history')}
+          </span>
         }
         key="StudioHistory"
       >
-        <Scrollbars style={{height: consoleHeight}}>
-          <StudioHistory/>
+        <Scrollbars style={{ height: consoleHeight }}>
+          <StudioHistory />
         </Scrollbars>
       </TabPane>
       <TabPane
         tab={
           <span>
-          <FunctionOutlined/>
-          函数
-        </span>
+            <PrinterOutlined />
+            {l('pages.datastudio.label.data')}
+          </span>
         }
-        key="StudioFX"
+        key="StudioData"
       >
-        <Scrollbars style={{height: consoleHeight}}>
-          <StudioFX/>
-        </Scrollbars>
+        <StudioData height={consoleHeight} isActive={activeKey === "StudioData"} />
       </TabPane>
     </Tabs>
   );
 };
 
-export default connect(({Studio}: { Studio: StateType }) => ({
+export default connect(({ Studio }: { Studio: StateType }) => ({
   sql: Studio.sql,
   current: Studio.current,
 }))(StudioConsole);

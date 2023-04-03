@@ -25,7 +25,6 @@ import type {SqlMetaData} from "@/components/Studio/StudioEvent/data";
 export type ClusterType = {
   id: number,
   name: string,
-  alias: string,
   type: string,
   hosts: string,
   jobManagerHost: string,
@@ -39,7 +38,6 @@ export type ClusterType = {
 export type ClusterConfigurationType = {
   id: number,
   name: string,
-  alias: string,
   type: string,
   config: any,
   available: boolean,
@@ -52,7 +50,6 @@ export type ClusterConfigurationType = {
 export type DataBaseType = {
   id: number,
   name: string,
-  alias: string,
   groupName: string,
   type: string,
   url: string,
@@ -71,7 +68,6 @@ export type DataBaseType = {
 export type EnvType = {
   id?: number,
   name?: string,
-  alias?: string,
   fragment?: boolean,
 };
 
@@ -79,7 +75,6 @@ export type TaskType = {
   id?: number,
   catalogueId?: number,
   name?: string,
-  alias?: string,
   dialect?: string,
   type?: string,
   checkPoint?: number,
@@ -240,8 +235,8 @@ export type ModelType = {
     renameTab: Reducer<StateType>;
   };
 };
-
 const Model: ModelType = {
+
   namespace: 'Studio',
   state: {
     isFullScreen: false,
@@ -259,7 +254,7 @@ const Model: ModelType = {
     current: undefined,
     sql: '',
     // monaco: {},
-    currentPath: ['引导页'],
+    currentPath: ['Guide Page'],
     tabs: {
       activeKey: 0,
       panes: [],
@@ -411,7 +406,7 @@ const Model: ModelType = {
           ...state,
           current: undefined,
           tabs: payload,
-          currentPath: ['引导页'],
+          currentPath: ['Guide Page'],
         };
       }
       return {
@@ -434,10 +429,12 @@ const Model: ModelType = {
       }
       let newCurrent = undefined;
       if (newTabs.panes.length > 0) {
-        newCurrent = newTabs.panes[newTabs.panes.length - 1];
-      }
-      if (newCurrent && (newTabs.activeKey == payload)) {
-        newTabs.activeKey = newCurrent.key;
+        if (newTabs.activeKey == payload) {
+          newCurrent = newTabs.panes[newTabs.panes.length - 1];
+          newTabs.activeKey = newCurrent.key;
+        } else {
+          newCurrent = state.current;
+        }
       } else {
         newTabs.activeKey = undefined;
       }
@@ -630,13 +627,13 @@ const Model: ModelType = {
         if (newTabs.panes[i].key == payload.key) {
           newTabs.panes[i].title = payload.title;
           newTabs.panes[i].icon = payload.icon;
-          newTabs.panes[i].task.alias = payload.title;
+          newTabs.panes[i].task.name = payload.title;
           newTabs.panes[i].path[newTabs.panes[i].path.length - 1] = payload.title;
         }
         if (newTabs.panes[i].key == newCurrent.key) {
           newCurrent.title = payload.title;
           newCurrent.icon = payload.icon;
-          newCurrent.task.alias = payload.title;
+          newCurrent.task.name = payload.title;
           newCurrent.path[newCurrent.path.length - 1] = payload.title;
         }
       }
@@ -645,7 +642,7 @@ const Model: ModelType = {
           ...state,
           current: undefined,
           tabs: {...newTabs},
-          currentPath: ['引导页'],
+          currentPath: ['Guide Page'],
         };
       }
       return {

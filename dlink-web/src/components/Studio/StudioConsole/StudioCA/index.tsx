@@ -18,53 +18,53 @@
  */
 
 
-import {Tabs, Tooltip, Button, Modal, message, Empty} from "antd";
+import {Button, Empty, message, Modal, Tabs, Tooltip} from "antd";
 import {SearchOutlined, SnippetsOutlined} from "@ant-design/icons";
 import {StateType} from "@/pages/DataStudio/model";
 import {connect} from "umi";
-import styles from "./index.less";
 import {getLineage, getStreamGraph} from "@/pages/DataStudio/service";
 import {useState} from "react";
-import Lineage, {getInit} from "@/components/Lineage";
+import Lineage from "@/components/Lineage";
 import CodeShow from "@/components/Common/CodeShow";
 import {DIALECT} from "@/components/Studio/conf";
+import {l} from "@/utils/intl";
 
-const { TabPane } = Tabs;
+const {TabPane} = Tabs;
 
 const StudioCA = (props: any) => {
   const {current} = props;
   const [data, setData] = useState(undefined);
 
-  const handleLineage=()=>{
+  const handleLineage = () => {
     setData(undefined);
     const res = getLineage({
-      statement:current.value,
-      statementSet:current.task.statementSet,
-      dialect:current.task.dialect,
-      databaseId:current.task.databaseId,
+      statement: current.value,
+      statementSet: current.task.statementSet,
+      dialect: current.task.dialect,
+      databaseId: current.task.databaseId,
       type: 1,
     });
-    res.then((result)=>{
-      if(result.datas){
+    res.then((result) => {
+      if (result.datas) {
         setData(result.datas);
-      }else {
-        message.error(`获取作业血缘失败，原因：\n${result.msg}`);
+      } else {
+        message.error(l('pages.datastudio.label.lineage.query.error','',{msg : result.msg}));
       }
     })
   };
 
-  const handleExportStreamGraphPlan=()=>{
+  const handleExportStreamGraphPlan = () => {
     const res = getStreamGraph({
       ...current.task,
       configJson: JSON.stringify(current.task.config),
       statement: current.value,
     });
-    res.then((result)=>{
+    res.then((result) => {
       Modal.info({
-        title: current.task.alias + '的 StreamGraphPlan',
+        title: current.task.alias + l('pages.datastudio.label.lineage.streamplan'),
         width: 1000,
         content: (
-          <CodeShow code={JSON.stringify((result.datas?result.datas:result.msg), null, "\t")} language='json'
+          <CodeShow code={JSON.stringify((result.datas ? result.datas : result.msg), null, "\t")} language='json'
                     height='500px' theme="vs-dark"/>
         ),
         onOk() {
@@ -77,17 +77,17 @@ const StudioCA = (props: any) => {
     <Tabs defaultActiveKey="Lineage" size="small" tabPosition="top" style={{border: "1px solid #f0f0f0"}}
           tabBarExtraContent={
             <>
-              <Tooltip title="重新计算血缘">
+              <Tooltip title= {l('pages.datastudio.label.lineage.recalculate')}>
                 <Button
                   type="text"
-                  icon={<SearchOutlined />}
+                  icon={<SearchOutlined/>}
                   onClick={handleLineage}
                 >
-                  计算血缘
+                  {l('pages.datastudio.label.lineage.calculate')}
                 </Button>
               </Tooltip>
               {(!current.task.dialect || current.task.dialect == DIALECT.FLINKSQL) ?
-                <Tooltip title="导出 StreamGraphPlan">
+                <Tooltip title={l('pages.datastudio.label.lineage.export')}>
                   <Button
                     type="text"
                     icon={<SnippetsOutlined/>}
@@ -99,13 +99,13 @@ const StudioCA = (props: any) => {
               }
             </>}
     >
-      <TabPane tab={<span>血缘分析</span>} key="Lineage">
-        {data?<Lineage datas={data}/>:<Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>}
+      <TabPane tab={<span>{l('pages.devops.jobinfo.lineage')}</span>} key="Lineage">
+        {data ? <Lineage datas={data}/> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>}
       </TabPane>
     </Tabs>
   </>)
 };
 
-export default connect(({ Studio }: { Studio: StateType }) => ({
+export default connect(({Studio}: { Studio: StateType }) => ({
   current: Studio.current,
 }))(StudioCA);

@@ -19,7 +19,8 @@
 
 
 import React from 'react';
-import { Modal } from 'antd';
+import {Modal} from 'antd';
+import {l} from "@/utils/intl";
 
 type CreateFormProps = {
   modalVisible: boolean;
@@ -27,12 +28,12 @@ type CreateFormProps = {
 };
 
 const CreateForm: React.FC<CreateFormProps> = (props) => {
-  const { modalVisible, onCancel } = props;
+  const {modalVisible, onCancel} = props;
 
   return (
     <Modal
       destroyOnClose
-      title="添加任务"
+      title={l('pages.task.add.job')}
       visible={modalVisible}
       onCancel={() => onCancel()}
       footer={null}

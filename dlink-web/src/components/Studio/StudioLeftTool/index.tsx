@@ -17,58 +17,32 @@
  *
  */
 
-
-import {Empty, Tabs} from "antd";
-import {
-  AppstoreOutlined,
-  BarsOutlined,
-  CloudOutlined,
-  ClusterOutlined,
-  DatabaseOutlined,
-  FunctionOutlined,
-  InsertRowAboveOutlined,
-  MessageOutlined
-} from "@ant-design/icons";
+import {Tabs} from "antd";
+import {AppstoreOutlined, BarsOutlined, InsertRowAboveOutlined} from "@ant-design/icons";
 import {StateType} from "@/pages/DataStudio/model";
 import {connect} from "umi";
 import StudioTree from "../StudioTree";
-import StudioConnector from "./StudioConnector";
-import StudioDataBase from "./StudioDataBase";
-import StudioCluster from "./StudioCluster";
 import StudioMetaData from "./StudioMetaData";
 import StudioMetaStore from "./StudioMetaStore";
-import StudioFragment from "@/components/Studio/StudioLeftTool/StudioFragment";
+import {l} from "@/utils/intl";
 
 const {TabPane} = Tabs;
 
 const StudioLeftTool = (props: any) => {
+
   const {toolHeight} = props;
 
   return (
     <Tabs defaultActiveKey="1" size="small" tabPosition="left" style={{height: toolHeight}}>
-      <TabPane tab={<span><BarsOutlined/> 目录</span>} key="StudioTree">
+      <TabPane tab={<span><BarsOutlined/> {l('pages.datastudio.label.directory')}</span>} key="StudioTree">
         <StudioTree/>
       </TabPane>
-      <TabPane tab={<span><InsertRowAboveOutlined/> 结构</span>} key="MetaStore">
+      <TabPane tab={<span><InsertRowAboveOutlined/> {l('pages.datastudio.label.structure')}</span>}
+               key="MetaStore">
         <StudioMetaStore/>
       </TabPane>
-      <TabPane tab={<span><MessageOutlined/> 会话</span>} key="Connectors">
-        <StudioConnector/>
-      </TabPane>
-      <TabPane tab={<span><ClusterOutlined/> 集群</span>} key="Cluster">
-        <StudioCluster/>
-      </TabPane>
-      <TabPane tab={<span><DatabaseOutlined/> 数据源</span>} key="DataSource">
-        <StudioDataBase/>
-      </TabPane>
-      <TabPane tab={<span><AppstoreOutlined/> 元数据</span>} key="MetaData">
+      <TabPane tab={<span><AppstoreOutlined/> {l('pages.datastudio.label.meta')}</span>} key="MetaData">
         <StudioMetaData/>
-      </TabPane>
-      <TabPane tab={<span><CloudOutlined/> 全局变量</span>} key="fragment">
-        <StudioFragment/>
-      </TabPane>
-      <TabPane tab={<span><FunctionOutlined/> 函数</span>} key="Function">
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>
       </TabPane>
     </Tabs>
   );
