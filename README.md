@@ -1,27 +1,27 @@
 # Dinky
 
-[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
-[![Total Lines](https://tokei.rs/b1/github/DataLinkDC/dinky?category=lines)](https://github.com/DataLinkDC/dinky)
-[![CN doc](https://img.shields.io/badge/文档-中文版-blue.svg)](README_zh_CN.md)
-[![EN doc](https://img.shields.io/badge/document-English-blue.svg)](README.md)
+[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg?style=socialflat-square&)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![Total Lines](https://img.shields.io/github/stars/DataLinkDC/dinky?style=socialflat-square&label=stars)](https://github.com/DataLinkDC/dinky/stargazers)
+[![CN doc](https://img.shields.io/badge/文档-中文版-blue.svg?style=socialflat-square&)](README_zh_CN.md)
+[![EN doc](https://img.shields.io/badge/document-English-blue.svg?style=socialflat-square&)](README.md)
 
 [![Stargazers over time](https://starchart.cc/DataLinkDC/dinky.svg)](https://starchart.cc/DataLinkDC/dinky)
 
 ## Introduction
 
-Dinky is an out of the box one-stop real-time computing platform dedicated to the construction and practice of Unified Streaming & Batch and Unified Data Lake & Data Warehouse. Based on Apache Flink, Dinky provides the ability to connect many big data frameworks including OLAP and Data Lake.
+Dinky is an out-of-the-box, one-stop, real-time computing platform dedicated to the construction and practice of Unified Streaming & Batch and Unified Data Lake & Data Warehouse. Based on Apache Flink, Dinky provides the ability to connect many big data frameworks including OLAP and Data Lake.
 
 ## Feature
 
-Its main feature are as follows:
+Its main features are as follows:
 
-- Immersive Flink SQL Data Development: Automatic prompt completion, syntax highlighting, statement beautification, online debugging, syntax verification, execution plan, MetaStore, lineage, version comparison, etc.
-- Support FlinkSQL multi-version development and execution modes: Local,Standalone,Yarn/Kubernetes Session,Yarn Per-Job,Yarn/Kubernetes Application.
-- Support Apache Flink ecology: Connector,FlinkCDC,Table Store,etc.
-- Support FlinkSQL syntax enhancement: Database synchronization, execution environments, global variables, statement merging, table-valued aggregate functions, load dependency, row-level permissions, etc.
+- Immersive Flink SQL Data Development: Dinky provides automatic prompt completion, syntax highlighting, statement beautification, online debugging, syntax verification, execution plan, MetaStore, lineage, version comparison, and more.
+- Support FlinkSQL multi-version development and execution modes: Dinky supports multiple development and execution modes for FlinkSQL, including Local, Standalone, Yarn/Kubernetes Session, Yarn Per-Job, and Yarn/Kubernetes Application.
+- Support FlinkSQL syntax enhancement: Dinky enhances FlinkSQL with features like database synchronization, execution environments, global variables, statement 
+  merging, table-valued aggregate functions, load dependency, and row-level permissions.
 - Supports real-time warehousing and lake entry of the entire FlinkCDC database, multi-database output, and automatic table creation.
-- Support SQL job development: ClickHouse, Doris, Hive, Mysql, Oracle, Phoenix, PostgreSql, Presto, SqlServer, StarRocks, etc.
-- Support real-time online debugging preview Table, ChangeLog, statistical chart and UDF.
+- Support SQL job development: You can develop SQL jobs for various databases, including ClickHouse, Doris, Hive, MySQL, Oracle, Phoenix, PostgreSQL, Presto, SQL Server, StarRocks, and more.
+- Support real-time online debugging:preview Table, ChangeLog, statistical chart and UDF.
 - Support Flink Catalog, data source metadata online query and management.
 - Support real-time task operation and maintenance: Online and offline, job information, cluster information, job snapshot, exception information, data map, data exploration, historical version, alarm record, etc.
 - Support as multi-version FlinkSQL Server and OpenApi capability.
@@ -29,7 +29,7 @@ Its main feature are as follows:
 - Support automatically managed SavePoint/CheckPoint recovery and triggering mechanisms: latest, earliest, specified, etc.
 - Support resource management: Cluster instance, cluster configuration, jar, data source, alarm group, alarm instance, document, global variable, system configuration, etc.
 - Support enterprise-level management: multi-tenant, user, role, project space.
-- More hidden features are waiting for friends to explore.
+- More hidden features await exploration by our users.
 
 ## Principle
 
@@ -70,8 +70,13 @@ Its main feature are as follows:
 ![jobinfo](https://raw.githubusercontent.com/DataLinkDC/dinky/dev/images/070/jobinfo.png)
 
 ## Participate in Contributions
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/DataLinkDC/dinky/pulls)
 
 Welcome to join the community, build a win-win situation, please refer to the contribution process： [How to contribute](https://github.com/DataLinkDC/dinky/blob/dev/docs/docs/developer_guide/contribution/how_contribute.md).
+
+Thank you to all the people who already contributed to Dinky!
+
+[![contrib graph](https://contrib.rocks/image?repo=DataLinkDC/dinky)](https://github.com/DataLinkDC/dinky/graphs/contributors)
 
 ## How to Deploy
 
@@ -79,11 +84,11 @@ Welcome to join the community, build a win-win situation, please refer to the co
 
 - The 0.7 branch is the current stable version. Please use this branch for compilation and debugging.
 
-See [source code compilation](https://github.com/DataLinkDC/dinky/blob/dev/docs/docs/build_deploy/build.md) and [installation and deployment](https://github.com/DataLinkDC/dinky/blob/dev/docs/docs/build_deploy/deploy.md) for details.
+See [source code compilation](https://github.com/DataLinkDC/dinky/blob/dev/docs/docs/deploy_guide/compile.mdx) and [installation and deployment](https://github.com/DataLinkDC/dinky/blob/dev/docs/docs/deploy_guide/deploy.mdx) for details.
 
 ## How to Upgrade
 
-Due to many functions, there are many bugs and optimization points. It is strongly recommended to use or upgrade to the latest version.
+Due to the numerous functionalities, there are several bugs and optimization points that need attention.. It is strongly recommended to use or upgrade to the latest version.
 
 Upgrade steps:
 
@@ -93,9 +98,9 @@ Upgrade steps:
 
 ## Thanks
 
-Standing on the shoulders of giants, Dinky was born. For this we express our heartfelt thanks to all the open source software used and its communities! We also hope that we are not only beneficiaries of open source, but also contributors to open source. We also hope that partners who have the same enthusiasm and belief in open source will join in and contribute to open source together.
+Standing on the shoulders of giants, Dinky was born. For this we express our heartfelt thanks to all the open source software used and its communities! We also hope that we are not only beneficiaries of open source, but also contributors to open source. We also hope that partners who share our enthusiasm and belief in open source will join us in contributing to the open-source community.
 
-A partial list of acknowledgements follows:
+Below is a partial list of acknowledgements:
 
 [Apache Flink](https://github.com/apache/flink)
 
@@ -119,13 +124,13 @@ A partial list of acknowledgements follows:
 
 [SpringBoot]()
 
-Thanks to [JetBrains](https://www.jetbrains.com/?from=dlink) for sponsoring a free open source license.
+Thanks to [JetBrains](https://www.jetbrains.com/?from=dlink) for providing a free open-source license.
 
 [![JetBrains](https://raw.githubusercontent.com/DataLinkDC/dinky/dev/images/main/jetbrains.svg)](https://www.jetbrains.com/?from=dlink)
 
 ## Get Help
 
-1.Create an issue and describe it clearly.
+1.Create an issue and provide a clear description.
 
 2.Visit the [official website](http://www.dlink.top/#/) website to read the latest documentation manual.
 

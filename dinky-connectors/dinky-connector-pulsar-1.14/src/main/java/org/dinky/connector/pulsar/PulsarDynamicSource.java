@@ -53,16 +53,11 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author DarrenDa
- * * @version 1.0
- * * @Desc:
- **/
+/** * @version 1.0 * @Desc: */
 
 /** A version-agnostic Pulsar {@link ScanTableSource}. */
 @Internal
-public class PulsarDynamicSource
-        implements ScanTableSource, SupportsWatermarkPushDown {
+public class PulsarDynamicSource implements ScanTableSource, SupportsWatermarkPushDown {
 
     private static final Logger LOG = LoggerFactory.getLogger(PulsarDynamicSource.class);
     private final String serviceUrl;
@@ -107,7 +102,6 @@ public class PulsarDynamicSource
         this.properties = properties;
         this.sourceParallelism = sourceParallelism;
         this.watermarkStrategy = null;
-
     }
 
     @Override
@@ -125,8 +119,7 @@ public class PulsarDynamicSource
         final DeserializationSchema<RowData> deserializer =
                 decodingFormat.createRuntimeDecoder(runtimeProviderContext, producedDataType);
 
-        final PulsarSource<RowData> pulsarSource =
-                createPulsarSource(deserializer);
+        final PulsarSource<RowData> pulsarSource = createPulsarSource(deserializer);
 
         return new DataStreamScanProvider() {
             @Override
@@ -138,10 +131,10 @@ public class PulsarDynamicSource
                     LOG.info("WatermarkStrategy 不为空");
                 }
 
-                DataStreamSource<RowData> rowDataDataStreamSource = execEnv.fromSource(
-                        pulsarSource, watermarkStrategy, "PulsarSource-" + tableIdentifier);
+                DataStreamSource<RowData> rowDataDataStreamSource =
+                        execEnv.fromSource(pulsarSource, watermarkStrategy, "PulsarSource-" + tableIdentifier);
 
-                //设置source并行度
+                // 设置source并行度
                 if (sourceParallelism != null) {
                     rowDataDataStreamSource.setParallelism(sourceParallelism);
                 }
@@ -169,8 +162,7 @@ public class PulsarDynamicSource
                 producedDataType,
                 tableIdentifier,
                 properties,
-                sourceParallelism
-        );
+                sourceParallelism);
     }
 
     @Override
@@ -178,9 +170,8 @@ public class PulsarDynamicSource
         return "Pulsar Table Source";
     }
 
-    //---------------------------------------------------------------------------------------------
-    protected PulsarSource<RowData> createPulsarSource(
-            DeserializationSchema<RowData> deserializer) {
+    // ---------------------------------------------------------------------------------------------
+    protected PulsarSource<RowData> createPulsarSource(DeserializationSchema<RowData> deserializer) {
 
         final PulsarSourceBuilder<RowData> pulsarSourceBuilder = PulsarSource.builder();
 
@@ -207,8 +198,7 @@ public class PulsarDynamicSource
                 pulsarSourceBuilder.setSubscriptionType(SubscriptionType.Failover);
                 break;
             default:
-                throw new TableException(
-                        "Unsupported subscriptionType. Validator should have checked that.");
+                throw new TableException("Unsupported subscriptionType. Validator should have checked that.");
         }
 
         switch (startupMode) {
@@ -223,17 +213,14 @@ public class PulsarDynamicSource
                 pulsarSourceBuilder.setStartCursor(StartCursor.fromMessageTime(timestamp));
                 break;
             default:
-                throw new TableException(
-                        "Unsupported startup mode. Validator should have checked that.");
+                throw new TableException("Unsupported startup mode. Validator should have checked that.");
         }
 
         return pulsarSourceBuilder.build();
-
     }
 
     @Override
     public void applyWatermark(WatermarkStrategy<RowData> watermarkStrategy) {
         this.watermarkStrategy = watermarkStrategy;
     }
-
 }

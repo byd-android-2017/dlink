@@ -19,9 +19,9 @@
 
 package org.dinky.service.impl;
 
-import org.dinky.db.service.impl.SuperServiceImpl;
+import org.dinky.data.model.rbac.UserTenant;
 import org.dinky.mapper.UserTenantMapper;
-import org.dinky.model.UserTenant;
+import org.dinky.mybatis.service.impl.SuperServiceImpl;
 import org.dinky.service.UserTenantService;
 
 import java.util.List;
@@ -29,8 +29,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserTenantServiceImpl extends SuperServiceImpl<UserTenantMapper, UserTenant>
-        implements UserTenantService {
+public class UserTenantServiceImpl extends SuperServiceImpl<UserTenantMapper, UserTenant> implements UserTenantService {
 
     @Override
     public List<UserTenant> getUserTenantByUserId(int userId) {

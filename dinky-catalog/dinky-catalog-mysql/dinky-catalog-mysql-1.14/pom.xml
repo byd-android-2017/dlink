@@ -21,12 +21,12 @@
     <parent>
         <groupId>org.dinky</groupId>
         <artifactId>dinky-catalog-mysql</artifactId>
-        <version>0.8.0</version>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
+
     <artifactId>dinky-catalog-mysql-1.14</artifactId>
-
     <packaging>jar</packaging>
-
     <name>Dinky : Catalog : Mysql 1.14</name>
 
     <dependencies>

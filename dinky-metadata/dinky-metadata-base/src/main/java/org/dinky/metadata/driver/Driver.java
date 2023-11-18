@@ -20,14 +20,14 @@
 package org.dinky.metadata.driver;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.exception.MetaDataException;
-import org.dinky.exception.SplitTableException;
+import org.dinky.data.exception.MetaDataException;
+import org.dinky.data.exception.SplitTableException;
+import org.dinky.data.model.Column;
+import org.dinky.data.model.QueryData;
+import org.dinky.data.model.Schema;
+import org.dinky.data.model.Table;
+import org.dinky.data.result.SqlExplainResult;
 import org.dinky.metadata.result.JdbcSelectResult;
-import org.dinky.model.Column;
-import org.dinky.model.QueryData;
-import org.dinky.model.Schema;
-import org.dinky.model.Table;
-import org.dinky.result.SqlExplainResult;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +38,6 @@ import java.util.Set;
 /**
  * Driver
  *
- * @author wenmo
  * @since 2021/7/19 23:15
  */
 public interface Driver extends AutoCloseable {
@@ -59,11 +58,11 @@ public interface Driver extends AutoCloseable {
         if (DriverPool.exist(key)) {
             return getHealthDriver(key);
         }
+
         synchronized (Driver.class) {
             Optional<Driver> optionalDriver = Driver.get(config);
             if (!optionalDriver.isPresent()) {
-                throw new MetaDataException(
-                        "缺少数据源类型【" + config.getType() + "】的依赖，请在 lib 下添加对应的扩展依赖");
+                throw new MetaDataException("缺少数据源类型【" + config.getType() + "】的依赖，请在 lib 下添加对应的扩展依赖");
             }
             Driver driver = optionalDriver.get().connect();
             DriverPool.push(key, driver);
@@ -71,13 +70,20 @@ public interface Driver extends AutoCloseable {
         }
     }
 
+    static Driver buildNewConnection(DriverConfig config) {
+        Optional<Driver> optionalDriver = Driver.get(config);
+        if (!optionalDriver.isPresent()) {
+            throw new MetaDataException("Missing " + config.getType() + " dependency package: dinky-metadata-"
+                    + config.getType().toLowerCase() + ".jar");
+        }
+        return optionalDriver.get().connect();
+    }
+
     static Driver buildUnconnected(DriverConfig config) {
-        String key = config.getName();
         synchronized (Driver.class) {
             Optional<Driver> optionalDriver = Driver.get(config);
             if (!optionalDriver.isPresent()) {
-                throw new MetaDataException(
-                        "缺少数据源类型【" + config.getType() + "】的依赖，请在 lib 下添加对应的扩展依赖");
+                throw new MetaDataException("缺少数据源类型【" + config.getType() + "】的依赖，请在 lib 下添加对应的扩展依赖");
             }
             return optionalDriver.get();
         }
@@ -115,9 +121,11 @@ public interface Driver extends AutoCloseable {
                 type = "Greenplum";
             }
         }
+
         if (Asserts.isNull(type)) {
             throw new MetaDataException("缺少数据源类型:【" + connector + "】");
         }
+
         DriverConfig driverConfig = new DriverConfig(url, type, url, username, password);
         return build(driverConfig);
     }

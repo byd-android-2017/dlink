@@ -20,8 +20,9 @@
 package org.dinky.metadata.convert;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.model.Column;
-import org.dinky.model.ColumnType;
+import org.dinky.data.enums.ColumnType;
+import org.dinky.data.model.Column;
+import org.dinky.metadata.driver.DriverConfig;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,7 +30,6 @@ import java.sql.SQLException;
 /**
  * ITypeConvert
  *
- * @author wenmo
  * @since 2021/7/20 14:39
  */
 public interface ITypeConvert {
@@ -40,15 +40,20 @@ public interface ITypeConvert {
 
     ColumnType convert(Column column);
 
+    default ColumnType convert(Column column, DriverConfig driverConfig) {
+        return convert(column);
+    }
+
     String convertToDB(ColumnType columnType);
 
-    default Object convertValue(ResultSet results, String columnName, String javaType)
-            throws SQLException {
+    default Object convertValue(ResultSet results, String columnName, String javaType) throws SQLException {
         if (Asserts.isNull(javaType)) {
             return results.getString(columnName);
         }
         switch (javaType.toLowerCase()) {
             case "string":
+            case "text":
+            case "varchar":
                 return results.getString(columnName);
             case "double":
                 return results.getDouble(columnName);
@@ -71,6 +76,8 @@ public interface ITypeConvert {
             case "blob":
                 return results.getBlob(columnName);
             case "boolean":
+            case "bool":
+            case "bit":
                 return results.getBoolean(columnName);
             case "byte":
                 return results.getByte(columnName);

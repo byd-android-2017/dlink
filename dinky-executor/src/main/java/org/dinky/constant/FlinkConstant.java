@@ -22,7 +22,6 @@ package org.dinky.constant;
 /**
  * FlinkConstant
  *
- * @author wenmo
  * @since 2021/5/25 14:39
  */
 public interface FlinkConstant {
@@ -37,4 +36,6 @@ public interface FlinkConstant {
     String LOCAL_HOST = "localhost:8081";
     /** changlog op */
     String OP = "op";
+
+    String DEFAULT_FLINK_HOME = "/opt/flink";
 }

@@ -19,7 +19,7 @@
 
 package org.dinky.configure;
 
-import org.dinky.constant.BaseConstant;
+import org.dinky.data.constant.BaseConstant;
 import org.dinky.interceptor.LocaleChangeInterceptor;
 import org.dinky.interceptor.TenantInterceptor;
 
@@ -33,16 +33,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 
 import cn.dev33.satoken.interceptor.SaInterceptor;
+import cn.dev33.satoken.stp.StpUtil;
 
 /**
  * AppConfiguration
  *
- * @author wenmo
  * @since 2021/11/28 19:35
  */
 @Configuration
 public class AppConfig implements WebMvcConfigurer {
-
     /**
      * Cookie
      *
@@ -73,15 +72,15 @@ public class AppConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(localeChangeInterceptor());
         // 注册Sa-Token的路由拦截器
-
-        registry.addInterceptor(new SaInterceptor())
+        registry.addInterceptor(new SaInterceptor(handler -> StpUtil.checkLogin()))
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/login")
-                .excludePathPatterns("/openapi/**");
+                .excludePathPatterns(
+                        "/api/login", "/api/ldap/ldapEnableStatus",
+                        "/druid/**", "/openapi/**");
 
         registry.addInterceptor(new TenantInterceptor())
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/login")
+                .excludePathPatterns("/api/login", "/api/ldap/ldapEnableStatus")
                 .addPathPatterns("/api/alertGroup/**")
                 .addPathPatterns("/api/alertHistory/**")
                 .addPathPatterns("/api/alertInstance/**")
@@ -94,9 +93,11 @@ public class AppConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/namespace/**")
                 .addPathPatterns("/api/savepoints/**")
                 .addPathPatterns("/api/statement/**")
+                .addPathPatterns("/api/studio/**")
                 .addPathPatterns("/api/task/**")
                 .addPathPatterns("/api/role/**")
                 .addPathPatterns("/api/fragment/**")
+                .addPathPatterns("/api/git/**")
                 .addPathPatterns("/api/jar/*");
     }
 }

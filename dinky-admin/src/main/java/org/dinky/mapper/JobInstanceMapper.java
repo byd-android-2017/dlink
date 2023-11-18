@@ -19,9 +19,9 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.JobInstance;
-import org.dinky.model.JobInstanceCount;
+import org.dinky.data.model.home.JobInstanceCount;
+import org.dinky.data.model.job.JobInstance;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -33,7 +33,6 @@ import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 /**
  * JobInstanceMapper
  *
- * @author wenmo
  * @since 2022/2/2 13:02
  */
 @Mapper

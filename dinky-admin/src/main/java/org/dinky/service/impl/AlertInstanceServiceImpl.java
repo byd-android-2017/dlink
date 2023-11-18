@@ -21,50 +21,39 @@ package org.dinky.service.impl;
 
 import org.dinky.alert.Alert;
 import org.dinky.alert.AlertConfig;
-import org.dinky.alert.AlertMsg;
 import org.dinky.alert.AlertResult;
-import org.dinky.alert.ShowType;
-import org.dinky.common.result.Result;
-import org.dinky.db.service.impl.SuperServiceImpl;
+import org.dinky.data.dto.AlertInstanceDTO;
+import org.dinky.data.model.alert.AlertGroup;
+import org.dinky.data.model.alert.AlertInstance;
+import org.dinky.data.result.Result;
 import org.dinky.mapper.AlertInstanceMapper;
-import org.dinky.model.AlertGroup;
-import org.dinky.model.AlertInstance;
+import org.dinky.mybatis.service.impl.SuperServiceImpl;
 import org.dinky.service.AlertGroupService;
 import org.dinky.service.AlertInstanceService;
-import org.dinky.utils.JSONUtil;
+import org.dinky.utils.JsonUtils;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.fasterxml.jackson.databind.JsonNode;
 
 import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
 
-/**
- * AlertInstanceServiceImpl
- *
- * @author wenmo
- * @since 2022/2/24 19:53
- */
+/** AlertInstanceServiceImpl */
 @Service
 @RequiredArgsConstructor
 public class AlertInstanceServiceImpl extends SuperServiceImpl<AlertInstanceMapper, AlertInstance>
@@ -74,68 +63,63 @@ public class AlertInstanceServiceImpl extends SuperServiceImpl<AlertInstanceMapp
 
     @Override
     public List<AlertInstance> listEnabledAll() {
-        return list(new QueryWrapper<AlertInstance>().eq("enabled", 1));
+        return list(new LambdaQueryWrapper<AlertInstance>().eq(AlertInstance::getEnabled, 1));
     }
 
     @Override
-    public AlertResult testAlert(AlertInstance alertInstance) {
-        AlertConfig alertConfig =
-                AlertConfig.build(
-                        alertInstance.getName(),
-                        alertInstance.getType(),
-                        JSONUtil.toMap(alertInstance.getParams()));
+    public AlertResult testAlert(AlertInstanceDTO alertInstanceDTO) {
+        AlertConfig alertConfig = AlertConfig.build(
+                alertInstanceDTO.getName(), alertInstanceDTO.getType(), JsonUtils.toMap(alertInstanceDTO.getParams()));
         Alert alert = Alert.buildTest(alertConfig);
-        String currentDateTime =
-                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                        .format(Calendar.getInstance().getTime());
-        String uuid = UUID.randomUUID().toString();
 
-        AlertMsg alertMsg = new AlertMsg();
-        alertMsg.setAlertType("实时告警监控");
-        alertMsg.setAlertTime(currentDateTime);
-        alertMsg.setJobID(uuid);
-        alertMsg.setJobName("测试任务");
-        alertMsg.setJobType("SQL");
-        alertMsg.setJobStatus("FAILED");
-        alertMsg.setJobStartTime(currentDateTime);
-        alertMsg.setJobEndTime(currentDateTime);
-        alertMsg.setJobDuration("1 Seconds");
-        String linkUrl = "http://cdh1:8081/#/job/" + uuid + "/overview";
-        String exceptionUrl = "http://cdh1:8081/#/job/" + uuid + "/exceptions";
+        String msg = "\n- **Job Name :** <font color='gray'>Test Job</font>\n"
+                + "- **Job Status :** <font color='red'>FAILED</font>\n"
+                + "- **Alert Time :** 2023-01-01  12:00:00\n"
+                + "- **Start Time :** 2023-01-01  12:00:00\n"
+                + "- **End Time :** 2023-01-01  12:00:00\n"
+                + "- **<font color='red'>The test exception, your job exception will pass here</font>**\n"
+                + "[Go to Task Web](https://github.com/DataLinkDC/dinky)";
 
-        Map<String, String> map = JSONUtil.toMap(alertInstance.getParams());
-        if (map.get("msgtype").equals(ShowType.MARKDOWN.getValue())) {
-            alertMsg.setLinkUrl("[跳转至该任务的 FlinkWeb](" + linkUrl + ")");
-            alertMsg.setExceptionUrl("[点击查看该任务的异常日志](" + exceptionUrl + ")");
-        } else {
-            alertMsg.setLinkUrl(linkUrl);
-            alertMsg.setExceptionUrl(exceptionUrl);
+        return alert.send("Fei Shu Alert Test", msg);
+    }
+
+    /**
+     * delete alert instance
+     *
+     * @param id {@link Integer}
+     * @return {@link Result<Void>}
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteAlertInstance(Integer id) {
+        final Map<Integer, Set<Integer>> alertGroupInformation = getAlertGroupInformation();
+        if (!this.removeById(id)) {
+            return false;
         }
-        String title = "任务【" + alertMsg.getJobName() + "】：" + alertMsg.getJobStatus() + "!";
-        return alert.send(title, alertMsg.toString());
+        alertGroupInformation.remove(id);
+        writeBackGroupInformation(alertGroupInformation);
+        return true;
     }
 
     @Override
-    public Result<Void> deleteAlertInstance(JsonNode para) {
-        if (para.size() > 0) {
-            final Map<Integer, Set<Integer>> alertGroupInformation = getAlertGroupInformation();
-            final List<Integer> error = new ArrayList<>();
-            for (final JsonNode item : para) {
-                Integer id = item.asInt();
-                if (!this.removeById(id)) {
-                    error.add(id);
-                }
-                alertGroupInformation.remove(id);
-            }
-            writeBackGroupInformation(alertGroupInformation);
-            if (error.size() == 0) {
-                return Result.succeed("删除成功");
-            } else {
-                return Result.succeed("删除部分成功，但" + error + "删除失败，共" + error.size() + "次失败。");
-            }
-        } else {
-            return Result.failed("请选择要删除的记录");
-        }
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean modifyAlertInstanceStatus(Integer id) {
+        AlertInstance alertInstance = getById(id);
+        alertInstance.setEnabled(!alertInstance.getEnabled());
+        return updateById(alertInstance);
+    }
+
+    /**
+     * @param keyword
+     * @return
+     */
+    @Override
+    public List<AlertInstance> selectListByKeyWord(String keyword) {
+        return getBaseMapper()
+                .selectList(new LambdaQueryWrapper<AlertInstance>()
+                        .like(AlertInstance::getName, keyword)
+                        .or()
+                        .like(AlertInstance::getType, keyword));
     }
 
     private void writeBackGroupInformation(Map<Integer, Set<Integer>> alertGroupInformation) {
@@ -152,9 +136,7 @@ public class AlertInstanceServiceImpl extends SuperServiceImpl<AlertInstanceMapp
                 final String instanceIdString = result.get(groupId);
                 result.put(
                         groupId,
-                        instanceIdString == null
-                                ? "" + entry.getKey()
-                                : instanceIdString + "," + entry.getKey());
+                        instanceIdString == null ? "" + entry.getKey() : instanceIdString + "," + entry.getKey());
             }
         }
         updateAlertGroupInformation(result, alertGroupInformation.get(null));
@@ -162,27 +144,22 @@ public class AlertInstanceServiceImpl extends SuperServiceImpl<AlertInstanceMapp
 
     private void updateAlertGroupInformation(Map<Integer, String> result, Set<Integer> groupIdSet) {
         final LocalDateTime now = LocalDateTime.now();
-        final List<AlertGroup> list =
-                groupIdSet.stream()
-                        .filter(Objects::nonNull)
-                        .map(
-                                groupId -> {
-                                    final AlertGroup alertGroup = new AlertGroup();
-                                    alertGroup.setId(groupId);
-                                    final String groupIds = result.get(groupId);
-                                    alertGroup.setAlertInstanceIds(
-                                            groupIds == null ? "" : groupIds);
-                                    alertGroup.setUpdateTime(now);
-                                    return alertGroup;
-                                })
-                        .collect(Collectors.toList());
+        final List<AlertGroup> list = groupIdSet.stream()
+                .filter(Objects::nonNull)
+                .map(groupId -> {
+                    final AlertGroup alertGroup = new AlertGroup();
+                    alertGroup.setId(groupId);
+                    final String groupIds = result.get(groupId);
+                    alertGroup.setAlertInstanceIds(groupIds == null ? "" : groupIds);
+                    return alertGroup;
+                })
+                .collect(Collectors.toList());
         alertGroupService.updateBatchById(list);
     }
 
     private Map<Integer, Set<Integer>> getAlertGroupInformation() {
         final LambdaQueryWrapper<AlertGroup> select =
-                new LambdaQueryWrapper<AlertGroup>()
-                        .select(AlertGroup::getId, AlertGroup::getAlertInstanceIds);
+                new LambdaQueryWrapper<AlertGroup>().select(AlertGroup::getId, AlertGroup::getAlertInstanceIds);
         final List<AlertGroup> list = alertGroupService.list(select);
         if (CollectionUtils.isEmpty(list)) {
             return new HashMap<>(0);

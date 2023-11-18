@@ -19,22 +19,40 @@
 
 package org.dinky.alert;
 
+import org.dinky.context.FreeMarkerHolder;
+
+import java.io.IOException;
+import java.util.Map;
+
+import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.text.StrFormatter;
+import freemarker.template.TemplateException;
+import lombok.Getter;
+
 /**
  * AbstractAlert
  *
- * @author wenmo
  * @since 2022/2/23 19:22
  */
 public abstract class AbstractAlert implements Alert {
 
+    @Getter
     private AlertConfig config;
 
-    public AlertConfig getConfig() {
-        return config;
-    }
+    private final FreeMarkerHolder freeMarkerHolder = new FreeMarkerHolder();
 
     public Alert setConfig(AlertConfig config) {
         this.config = config;
+        freeMarkerHolder.putTemplate(config.getType(), getTemplate());
         return this;
+    }
+
+    public String getTemplate() {
+        return ResourceUtil.readUtf8Str(StrFormatter.format("{}.ftl", config.getType()))
+                .replace("\n", "\n\n");
+    }
+
+    protected String buildContent(Map<String, Object> params) throws TemplateException, IOException {
+        return freeMarkerHolder.buildWithData(getType(), params);
     }
 }

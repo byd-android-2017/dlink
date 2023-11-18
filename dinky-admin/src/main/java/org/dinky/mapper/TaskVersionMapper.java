@@ -19,11 +19,10 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.TaskVersion;
+import org.dinky.data.model.TaskVersion;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
-/** @author huang */
 @Mapper
 public interface TaskVersionMapper extends SuperMapper<TaskVersion> {}

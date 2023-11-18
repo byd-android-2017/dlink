@@ -19,8 +19,8 @@
 
 package org.dinky.utils;
 
-import org.dinky.constant.DirConstant;
-import org.dinky.model.FileNode;
+import org.dinky.data.constant.DirConstant;
+import org.dinky.data.model.ext.FileNode;
 
 import java.util.List;
 
@@ -31,7 +31,6 @@ import org.junit.Test;
 /**
  * DirUtilTest
  *
- * @author wenmo
  * @since 2022/10/14 22:00
  */
 @Ignore

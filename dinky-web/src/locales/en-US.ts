@@ -20,6 +20,8 @@ import menu from './en-US/menu';
 import pages from './en-US/pages';
 import pwa from './en-US/pwa';
 import request from './en-US/request';
+import response from './en-US/response';
+import shortcutKey from './en-US/shortcutKey';
 
 export default {
   'navBar.lang': 'Languages',
@@ -31,5 +33,7 @@ export default {
   ...menu,
   ...pwa,
   ...pages,
-  ...request
+  ...request,
+  ...response,
+  ...shortcutKey
 };

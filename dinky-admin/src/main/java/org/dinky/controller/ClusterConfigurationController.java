@@ -19,14 +19,16 @@
 
 package org.dinky.controller;
 
-import org.dinky.assertion.Asserts;
-import org.dinky.common.result.ProTableResult;
-import org.dinky.common.result.Result;
+import org.dinky.data.annotations.Log;
+import org.dinky.data.constant.PermissionConstants;
+import org.dinky.data.dto.ClusterConfigurationDTO;
+import org.dinky.data.enums.BusinessType;
+import org.dinky.data.enums.Status;
+import org.dinky.data.model.ClusterConfiguration;
+import org.dinky.data.result.Result;
 import org.dinky.gateway.result.TestResult;
-import org.dinky.model.ClusterConfiguration;
 import org.dinky.service.ClusterConfigurationService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,88 +37,149 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * ClusterConfigController
  *
- * @author wenmo
  * @since 2021/11/6 21:16
  */
 @Slf4j
 @RestController
+@Api(tags = "Cluster Config Controller")
 @RequestMapping("/api/clusterConfiguration")
 @RequiredArgsConstructor
 public class ClusterConfigurationController {
 
     private final ClusterConfigurationService clusterConfigurationService;
 
-    /** 新增或者更新 */
-    @PutMapping
-    public Result<Void> saveOrUpdate(@RequestBody ClusterConfiguration clusterConfiguration) {
-        Integer id = clusterConfiguration.getId();
+    /**
+     * @param clusterConfiguration
+     * @return
+     */
+    @PutMapping("/saveOrUpdate")
+    @Log(title = "Insert Or Update Cluster Config", businessType = BusinessType.INSERT_OR_UPDATE)
+    @ApiOperation("Insert Or Update Cluster Config")
+    @ApiImplicitParam(
+            name = "clusterConfiguration",
+            value = "Cluster Configuration",
+            dataType = "ClusterConfiguration",
+            paramType = "body",
+            required = true,
+            dataTypeClass = ClusterConfiguration.class)
+    @SaCheckPermission(
+            value = {
+                PermissionConstants.REGISTRATION_CLUSTER_CONFIG_ADD,
+                PermissionConstants.REGISTRATION_CLUSTER_CONFIG_EDIT
+            },
+            mode = SaMode.OR)
+    public Result<Void> saveOrUpdateClusterConfig(@RequestBody ClusterConfigurationDTO clusterConfiguration) {
         TestResult testResult = clusterConfigurationService.testGateway(clusterConfiguration);
         clusterConfiguration.setIsAvailable(testResult.isAvailable());
-        if (clusterConfigurationService.saveOrUpdate(clusterConfiguration)) {
-            return Result.succeed(Asserts.isNotNull(id) ? "修改成功" : "新增成功");
+        if (clusterConfigurationService.saveOrUpdate(clusterConfiguration.toBean())) {
+            return Result.succeed(Status.SAVE_SUCCESS);
         } else {
-            return Result.failed(Asserts.isNotNull(id) ? "修改失败" : "新增失败");
+            return Result.failed(Status.SAVE_FAILED);
         }
     }
 
-    /** 动态查询列表 */
-    @PostMapping
-    public ProTableResult<ClusterConfiguration> listClusterConfigs(@RequestBody JsonNode para) {
-        return clusterConfigurationService.selectForProTable(para);
+    /**
+     * query cluster config list
+     * @param keyword
+     * @return
+     */
+    @GetMapping("/list")
+    @ApiOperation("Cluster Config List")
+    public Result<List<ClusterConfigurationDTO>> listClusterConfigList(@RequestParam String keyword) {
+        return Result.succeed(clusterConfigurationService.selectListByKeyWord(keyword));
     }
 
-    /** 批量删除 */
-    @DeleteMapping
-    public Result<Void> deleteMul(@RequestBody JsonNode para) {
-        if (para.size() > 0) {
-            List<Integer> error = new ArrayList<>();
-            for (final JsonNode item : para) {
-                Integer id = item.asInt();
-                if (!clusterConfigurationService.removeById(id)) {
-                    error.add(id);
-                }
-            }
-            if (error.size() == 0) {
-                return Result.succeed("删除成功");
-            } else {
-                return Result.succeed("删除部分成功，但" + error + "删除失败，共" + error.size() + "次失败。");
-            }
-        } else {
-            return Result.failed("请选择要删除的记录");
-        }
-    }
-
-    /** 获取指定ID的信息 */
-    @PostMapping("/getOneById")
-    public Result<ClusterConfiguration> getOneById(
-            @RequestBody ClusterConfiguration clusterConfiguration) {
-        clusterConfiguration = clusterConfigurationService.getById(clusterConfiguration.getId());
-        return Result.succeed(clusterConfiguration, "获取成功");
-    }
-
-    /** 获取可用的集群列表 */
+    /**
+     * query cluster config list of enabled
+     *
+     * @return
+     */
     @GetMapping("/listEnabledAll")
-    public Result<List<ClusterConfiguration>> listEnabledAll() {
-        List<ClusterConfiguration> clusters = clusterConfigurationService.listEnabledAll();
-        return Result.succeed(clusters, "获取成功");
+    @ApiOperation("Cluster Config List Enabled All")
+    @ApiImplicitParam(
+            name = "para",
+            value = "Cluster Configuration",
+            dataType = "JsonNode",
+            paramType = "body",
+            required = true)
+    public Result<List<ClusterConfiguration>> listEnabledAllClusterConfig() {
+        return Result.succeed(clusterConfigurationService.listEnabledAllClusterConfig());
     }
 
-    /** 测试 */
+    /**
+     * delete by id
+     *
+     * @param id {@link Integer}
+     * @return {@link Result}<{@link Void}>
+     */
+    @DeleteMapping("/delete")
+    @Log(title = "Cluster Config Delete by id", businessType = BusinessType.DELETE)
+    @ApiOperation("Cluster Config Delete by id")
+    @ApiImplicitParam(name = "id", value = "id", dataType = "Integer", paramType = "query", required = true)
+    @SaCheckPermission(value = PermissionConstants.REGISTRATION_CLUSTER_CONFIG_DELETE)
+    public Result<Void> deleteById(@RequestParam("id") Integer id) {
+        boolean removeById = clusterConfigurationService.removeById(id);
+        if (removeById) {
+            return Result.succeed(Status.DELETE_SUCCESS);
+        } else {
+            return Result.failed(Status.DELETE_FAILED);
+        }
+    }
+
+    /**
+     * enable by id
+     *
+     * @param id {@link Integer}
+     * @return {@link Result}<{@link Void}>
+     */
+    @PutMapping("/enable")
+    @Log(title = "Modify Cluster Config Status", businessType = BusinessType.UPDATE)
+    @ApiOperation("Modify Cluster Config Status")
+    @ApiImplicitParam(name = "id", value = "id", dataType = "Integer", paramType = "query", required = true)
+    @SaCheckPermission(value = PermissionConstants.REGISTRATION_CLUSTER_CONFIG_EDIT)
+    public Result<Void> modifyClusterConfigStatus(@RequestParam("id") Integer id) {
+        if (clusterConfigurationService.modifyClusterConfigStatus(id)) {
+            return Result.succeed(Status.MODIFY_SUCCESS);
+        } else {
+            return Result.failed(Status.MODIFY_FAILED);
+        }
+    }
+
+    /**
+     * test connection
+     *
+     * @param clusterConfiguration {@link ClusterConfiguration}
+     * @return {@link Result}<{@link Void}>
+     */
     @PostMapping("/testConnect")
-    public Result<Void> testConnect(@RequestBody ClusterConfiguration clusterConfiguration) {
+    @Log(title = "Test Connection", businessType = BusinessType.TEST)
+    @ApiOperation("Test Connection")
+    @ApiImplicitParam(
+            name = "clusterConfiguration",
+            value = "Cluster Configuration",
+            dataType = "ClusterConfiguration",
+            paramType = "body",
+            required = true,
+            dataTypeClass = ClusterConfiguration.class)
+    @SaCheckPermission(value = PermissionConstants.REGISTRATION_CLUSTER_CONFIG_HEARTBEATS)
+    public Result<Void> testConnect(@RequestBody ClusterConfigurationDTO clusterConfiguration) {
         TestResult testResult = clusterConfigurationService.testGateway(clusterConfiguration);
         if (testResult.isAvailable()) {
-            return Result.succeed("测试链接成功");
+            return Result.succeed(Status.TEST_CONNECTION_SUCCESS);
         } else {
             return Result.failed(testResult.getError());
         }

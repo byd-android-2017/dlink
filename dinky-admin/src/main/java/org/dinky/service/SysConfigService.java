@@ -19,24 +19,37 @@
 
 package org.dinky.service;
 
-import org.dinky.db.service.ISuperService;
-import org.dinky.model.SysConfig;
+import org.dinky.data.model.Configuration;
+import org.dinky.data.model.SysConfig;
+import org.dinky.mybatis.service.ISuperService;
 
+import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * SysConfig
  *
- * @author wenmo
  * @since 2021/11/18
  */
 public interface SysConfigService extends ISuperService<SysConfig> {
 
-    Map<String, Object> getAll();
+    /**
+     * Get all configurations.
+     *
+     * @return A map of string keys to lists of {@link Configuration} objects.
+     */
+    Map<String, List<Configuration<?>>> getAll();
 
+    /**
+     * Initialize system configurations.
+     */
     void initSysConfig();
 
-    void updateSysConfigByJson(JsonNode node);
+    /**
+     * Update system configurations by key-value pairs.
+     *
+     * @param key The key of the configuration to update.
+     * @param value The new value of the configuration.
+     */
+    void updateSysConfigByKv(String key, String value);
 }

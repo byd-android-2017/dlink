@@ -21,14 +21,25 @@ package org.dinky.interceptor;
 
 import org.dinky.assertion.Asserts;
 import org.dinky.context.TenantContextHolder;
+import org.dinky.context.UserInfoContextHolder;
+import org.dinky.data.dto.UserDTO;
+import org.dinky.data.model.rbac.Tenant;
 
-import java.util.Arrays;
+import org.apache.commons.collections4.CollectionUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.web.servlet.AsyncHandlerInterceptor;
 
+import cn.dev33.satoken.SaManager;
+import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.lang.Opt;
 import lombok.extern.slf4j.Slf4j;
 
 /** tenant interceptor */
@@ -36,14 +47,41 @@ import lombok.extern.slf4j.Slf4j;
 public class TenantInterceptor implements AsyncHandlerInterceptor {
 
     @Override
-    public boolean preHandle(
-            HttpServletRequest request, HttpServletResponse response, Object handler)
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
-        if (Asserts.isNotNull(request.getCookies())) {
-            Arrays.stream(request.getCookies())
-                    .filter(t -> "tenantId".equals(t.getName()))
-                    .findFirst()
-                    .ifPresent(t -> TenantContextHolder.set(Integer.valueOf(t.getValue())));
+        boolean isPass = false;
+        Cookie[] cookies = request.getCookies();
+        Opt<String> token = Opt.empty();
+        if (Asserts.isNotNull(cookies)) {
+            for (Cookie cookie : cookies) {
+                switch (cookie.getName()) {
+                    case "satoken":
+                        token = Opt.ofBlankAble(cookie.getValue());
+                        if (SaManager.getSaTokenDao().get("satoken:login:token:" + token.get()) != null) {
+                            isPass = true;
+                        }
+                        break;
+                    case "tenantId":
+                        UserDTO userInfo = UserInfoContextHolder.get(StpUtil.getLoginIdAsInt());
+                        if (Asserts.isNull(userInfo)) {
+                            StpUtil.logout(StpUtil.getLoginIdAsInt());
+                            return false;
+                        }
+
+                        int finalTenantId = Integer.parseInt(cookie.getValue());
+                        List<Tenant> tenants =
+                                Opt.ofNullable(userInfo.getTenantList()).orElse(new ArrayList<>()).stream()
+                                        .filter(t -> t.getId() == finalTenantId)
+                                        .collect(Collectors.toList());
+                        if (CollectionUtils.isEmpty(tenants)) {
+                            StpUtil.logout(StpUtil.getLoginIdAsInt());
+                            return false;
+                        }
+
+                        TenantContextHolder.set(finalTenantId);
+                        break;
+                }
+            }
         }
         return AsyncHandlerInterceptor.super.preHandle(request, response, handler);
     }

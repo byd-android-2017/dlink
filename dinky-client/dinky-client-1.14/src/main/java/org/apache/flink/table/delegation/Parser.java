@@ -69,8 +69,7 @@ public interface Parser {
      * @return resolved expression
      * @throws SqlParserException when failed to parse the sql expression
      */
-    ResolvedExpression parseSqlExpression(
-            String sqlExpression, RowType inputRowType, @Nullable LogicalType outputType);
+    ResolvedExpression parseSqlExpression(String sqlExpression, RowType inputRowType, @Nullable LogicalType outputType);
 
     /**
      * Returns completion hints for the given statement at the given cursor position. The completion
@@ -90,4 +89,21 @@ public interface Parser {
      * @throws SqlParserException if an exception is thrown when parsing the statement
      */
     SqlNode parseExpression(String sqlExpression);
+
+    /**
+     * Entry point for parsing SQL and return the abstract syntax tree
+     *
+     * @param statement the SQL statement to evaluate
+     * @return abstract syntax tree
+     * @throws org.apache.flink.table.api.SqlParserException when failed to parse the statement
+     */
+    SqlNode parseSql(String statement);
+
+    /**
+     * validate the query
+     *
+     * @param sqlNode SqlNode to execute on
+     * @return validated sqlNode
+     */
+    SqlNode validate(SqlNode sqlNode);
 }

@@ -19,15 +19,14 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.AlertHistory;
+import org.dinky.data.model.alert.AlertHistory;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * AlertHistoryMapper
  *
- * @author wenmo
  * @since 2022/2/24 20:32
  */
 @Mapper

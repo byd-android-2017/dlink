@@ -28,21 +28,26 @@ import org.apache.flink.configuration.Configuration;
 
 import java.util.List;
 
-/**
- * @author ZackYoung
- * @since 0.6.8
- */
+/** @since 0.6.8 */
 public class FunctionFactory {
+    /**
+     * UDF compilation & packaging initialization(udf编译 & 打包 初始化)
+     * @param udfClassList udf列表
+     * @param missionId 当前任务id
+     * @return 打包过后的路径
+     */
+    public static UDFPath initUDF(List<UDF> udfClassList, Integer missionId) {
+        return initUDF(udfClassList, missionId, new Configuration());
+    }
 
     /**
-     * udf编译 & 打包 初始化
+     * UDF compilation & packaging initialization(udf编译 & 打包 初始化)
      *
      * @param udfClassList udf列表
      * @param missionId 当前任务id
      * @return 打包过后的路径
      */
-    public static UDFPath initUDF(
-            List<UDF> udfClassList, Integer missionId, Configuration configuration) {
+    public static UDFPath initUDF(List<UDF> udfClassList, Integer missionId, Configuration configuration) {
 
         // 编译
         FunctionCompiler.getCompiler(udfClassList, configuration, missionId);

@@ -32,10 +32,7 @@ import java.time.ZoneId;
 
 import javax.xml.bind.DatatypeConverter;
 
-/**
- * @className: org.dinky.utils.ObjectConvertUtil @Description:
- * @author: jack zhong
- */
+/** @className: org.dinky.utils.ObjectConvertUtil @Description: */
 public class ObjectConvertUtil {
 
     public static Object convertValue(Object value, LogicalType logicalType) {
@@ -72,7 +69,7 @@ public class ObjectConvertUtil {
                 return Instant.ofEpochMilli((long) value).atZone(sinkTimeZone).toLocalDateTime();
             }
         } else if (logicalType instanceof DecimalType) {
-            return new BigDecimal((String) value);
+            return new BigDecimal(String.valueOf(value));
         } else if (logicalType instanceof BigIntType) {
             if (value instanceof Integer) {
                 return ((Integer) value).longValue();

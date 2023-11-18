@@ -20,11 +20,11 @@
 package org.dinky.metadata.driver;
 
 import org.dinky.assertion.Asserts;
+import org.dinky.data.model.Column;
+import org.dinky.data.model.Schema;
+import org.dinky.data.model.Table;
 import org.dinky.metadata.convert.ITypeConvert;
 import org.dinky.metadata.query.IDBQuery;
-import org.dinky.model.Column;
-import org.dinky.model.Schema;
-import org.dinky.model.Table;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 /**
  * AbstractDriver
  *
- * @author wenmo
  * @since 2021/7/19 23:32
  */
 public abstract class AbstractDriver implements Driver {
@@ -103,26 +102,19 @@ public abstract class AbstractDriver implements Driver {
             }
             String columnComment = columns.get(i).getComment();
             if (Asserts.isNotNullString(columnComment)) {
-                if (columnComment.contains("\'") | columnComment.contains("\"")) {
-                    columnComment = columnComment.replaceAll("\"|'", "");
+                if (columnComment.contains("'") || columnComment.contains("\"")) {
+                    columnComment = columnComment.replaceAll("[\"']", "");
                 }
-                sb.append("`" + columns.get(i).getName() + "`  --  " + columnComment + " \n");
+                sb.append(String.format("`%s`  --  %s \n", columns.get(i).getName(), columnComment));
             } else {
-                sb.append("`" + columns.get(i).getName() + "` \n");
+                sb.append(String.format("`%s` \n", columns.get(i).getName()));
             }
         }
+
         if (Asserts.isNotNullString(table.getComment())) {
-            sb.append(
-                    " FROM "
-                            + table.getSchema()
-                            + "."
-                            + table.getName()
-                            + ";"
-                            + " -- "
-                            + table.getComment()
-                            + "\n");
+            sb.append(String.format(" FROM %s.%s; -- %s\n", table.getSchema(), table.getName(), table.getComment()));
         } else {
-            sb.append(" FROM " + table.getSchema() + "." + table.getName() + ";\n");
+            sb.append(String.format(" FROM %s.%s;\n", table.getSchema(), table.getName()));
         }
         return sb.toString();
     }

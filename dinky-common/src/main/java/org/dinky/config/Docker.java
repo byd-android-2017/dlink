@@ -31,10 +31,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * @author ZackYoung
- * @since 0.7.1
- */
+/** @since 0.7.1 */
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
@@ -59,7 +56,8 @@ public class Docker {
         String instance1 = configMap.getOrDefault("docker.instance", "").toString();
         // eg tag: docker.io/dinky/flink:1.16.0
         String tag = configMap.getOrDefault("docker.image.tag", "").toString();
-        String dockerfile = configMap.getOrDefault("docker.image.dockerfile", "").toString();
+        String dockerfile =
+                configMap.getOrDefault("docker.image.dockerfile", "").toString();
         if (StrUtil.hasBlank(instance1, tag)) {
             return null;
         }
@@ -76,8 +74,10 @@ public class Docker {
         return Docker.builder()
                 .instance(instance1)
                 .registryUrl(configMap.getOrDefault("docker.registry.url", "").toString())
-                .registryUsername(configMap.getOrDefault("docker.registry.username", "").toString())
-                .registryPassword(configMap.getOrDefault("docker.registry.password", "").toString())
+                .registryUsername(
+                        configMap.getOrDefault("docker.registry.username", "").toString())
+                .registryPassword(
+                        configMap.getOrDefault("docker.registry.password", "").toString())
                 .imageNamespace(tagSplit.get(1))
                 .imageStorehouse(tagSplit.get(2))
                 .imageVersion(versionSplit.get(1))

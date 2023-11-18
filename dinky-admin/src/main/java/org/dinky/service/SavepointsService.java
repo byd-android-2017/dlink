@@ -19,22 +19,48 @@
 
 package org.dinky.service;
 
-import org.dinky.db.service.ISuperService;
-import org.dinky.model.Savepoints;
+import org.dinky.data.dto.TaskDTO;
+import org.dinky.data.model.Savepoints;
+import org.dinky.mybatis.service.ISuperService;
 
 import java.util.List;
 
 /**
  * Savepoints
  *
- * @author wenmo
  * @since 2021/11/21
  */
 public interface SavepointsService extends ISuperService<Savepoints> {
 
+    /**
+     * Get a list of savepoints for a specified task ID.
+     *
+     * @param taskId The ID of the task to get the savepoints for.
+     * @return A list of {@link Savepoints} objects representing the savepoints for the specified task ID.
+     */
     List<Savepoints> listSavepointsByTaskId(Integer taskId);
 
+    /**
+     * Get the latest savepoint for a specified task ID.
+     *
+     * @param taskId The ID of the task to get the latest savepoint for.
+     * @return A {@link Savepoints} object representing the latest savepoint for the specified task ID.
+     */
     Savepoints getLatestSavepointByTaskId(Integer taskId);
 
+    /**
+     * Get the earliest savepoint for a specified task ID.
+     *
+     * @param taskId The ID of the task to get the earliest savepoint for.
+     * @return A {@link Savepoints} object representing the earliest savepoint for the specified task ID.
+     */
     Savepoints getEarliestSavepointByTaskId(Integer taskId);
+
+    /**
+     * Get a savepoint for a specified task using the specified strategy.
+     *
+     * @param task A {@link TaskDTO} object representing the task to get the savepoint for.
+     * @return A {@link Savepoints} object representing the savepoint for the specified task.
+     */
+    Savepoints getSavePointWithStrategy(TaskDTO task);
 }

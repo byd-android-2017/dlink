@@ -19,8 +19,8 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.JobHistory;
+import org.dinky.data.model.job.JobHistory;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
@@ -29,7 +29,6 @@ import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 /**
  * JobHistoryMapper
  *
- * @author wenmo
  * @since 2022/3/2 19:50
  */
 @Mapper

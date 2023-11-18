@@ -37,17 +37,20 @@ import java.util.Objects;
 /**
  * PhoenixDynamicTableSink
  *
- * @author gy
  * @since 2022/3/17 11:39
- **/
-public class PhoenixDynamicTableSink implements DynamicTableSink  {
+ */
+public class PhoenixDynamicTableSink implements DynamicTableSink {
     private final PhoenixJdbcOptions jdbcOptions;
     private final JdbcExecutionOptions executionOptions;
     private final JdbcDmlOptions dmlOptions;
     private final TableSchema tableSchema;
     private final String dialectName;
 
-    public PhoenixDynamicTableSink(PhoenixJdbcOptions jdbcOptions, JdbcExecutionOptions executionOptions, JdbcDmlOptions dmlOptions, TableSchema tableSchema) {
+    public PhoenixDynamicTableSink(
+            PhoenixJdbcOptions jdbcOptions,
+            JdbcExecutionOptions executionOptions,
+            JdbcDmlOptions dmlOptions,
+            TableSchema tableSchema) {
         this.jdbcOptions = jdbcOptions;
         this.executionOptions = executionOptions;
         this.dmlOptions = dmlOptions;
@@ -58,17 +61,24 @@ public class PhoenixDynamicTableSink implements DynamicTableSink  {
     @Override
     public ChangelogMode getChangelogMode(ChangelogMode requestedMode) {
         this.validatePrimaryKey(requestedMode);
-        return ChangelogMode.newBuilder().addContainedKind(RowKind.INSERT).addContainedKind(RowKind.DELETE).addContainedKind(RowKind.UPDATE_AFTER).build();
+        return ChangelogMode.newBuilder()
+                .addContainedKind(RowKind.INSERT)
+                .addContainedKind(RowKind.DELETE)
+                .addContainedKind(RowKind.UPDATE_AFTER)
+                .build();
     }
 
     private void validatePrimaryKey(ChangelogMode requestedMode) {
-        Preconditions.checkState(ChangelogMode.insertOnly().equals(requestedMode) || this.dmlOptions.getKeyFields().isPresent(),
-                "please declare primary key for sink table when query contains update/delete record.");
+        Preconditions.checkState(
+                ChangelogMode.insertOnly().equals(requestedMode)
+                        || this.dmlOptions.getKeyFields().isPresent(),
+                "please declare primary key for sink table when query contains update/delete" + " record.");
     }
 
     @Override
     public SinkRuntimeProvider getSinkRuntimeProvider(Context context) {
-        TypeInformation<RowData> rowDataTypeInformation = context.createTypeInformation(this.tableSchema.toRowDataType());
+        TypeInformation<RowData> rowDataTypeInformation =
+                context.createTypeInformation(this.tableSchema.toRowDataType());
         PhoenixJdbcDynamicOutputFormatBuilder builder = new PhoenixJdbcDynamicOutputFormatBuilder();
         builder.setJdbcOptions(this.jdbcOptions);
         builder.setJdbcDmlOptions(this.dmlOptions);
@@ -94,7 +104,7 @@ public class PhoenixDynamicTableSink implements DynamicTableSink  {
         } else if (!(o instanceof PhoenixDynamicTableSink)) {
             return false;
         } else {
-            PhoenixDynamicTableSink that = (PhoenixDynamicTableSink)o;
+            PhoenixDynamicTableSink that = (PhoenixDynamicTableSink) o;
             return Objects.equals(this.jdbcOptions, that.jdbcOptions)
                     && Objects.equals(this.executionOptions, that.executionOptions)
                     && Objects.equals(this.dmlOptions, that.dmlOptions)
@@ -104,6 +114,8 @@ public class PhoenixDynamicTableSink implements DynamicTableSink  {
     }
 
     public int hashCode() {
-        return Objects.hash(new Object[]{this.jdbcOptions, this.executionOptions, this.dmlOptions, this.tableSchema, this.dialectName});
+        return Objects.hash(new Object[] {
+            this.jdbcOptions, this.executionOptions, this.dmlOptions, this.tableSchema, this.dialectName
+        });
     }
 }

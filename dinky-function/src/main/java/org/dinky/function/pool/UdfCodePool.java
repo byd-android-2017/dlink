@@ -20,7 +20,6 @@
 package org.dinky.function.pool;
 
 import org.dinky.function.data.model.UDF;
-import org.dinky.process.exception.DinkyException;
 
 import java.util.List;
 import java.util.Map;
@@ -28,19 +27,25 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.util.StrUtil;
+import lombok.extern.slf4j.Slf4j;
 
-/**
- * @author ZackYoung
- * @since 0.7.0
- */
+/** @since 0.7.0 */
+@Slf4j
 public class UdfCodePool {
 
     /** udf code pool key -> class name value -> udf */
     private static final Map<String, UDF> CODE_POOL = new ConcurrentHashMap<>();
 
+    private static final Map<String, String> GIT_POOL = new ConcurrentHashMap<>();
+
     public static void registerPool(List<UDF> udfList) {
         CODE_POOL.clear();
         CODE_POOL.putAll(udfList.stream().collect(Collectors.toMap(UDF::getClassName, udf -> udf)));
+    }
+
+    public static void updateGitPool(Map<String, String> newPool) {
+        GIT_POOL.clear();
+        GIT_POOL.putAll(newPool);
     }
 
     public static void addOrUpdate(UDF udf) {
@@ -50,8 +55,13 @@ public class UdfCodePool {
     public static UDF getUDF(String className) {
         UDF udf = CODE_POOL.get(className);
         if (udf == null) {
-            throw new DinkyException(StrUtil.format("class: {} is not exists!", className));
+            String error = StrUtil.format("class: {} is not exists!，maybe for add jar", className);
+            log.warn(error);
         }
         return udf;
+    }
+
+    public static String getGitPackage(String className) {
+        return GIT_POOL.get(className);
     }
 }

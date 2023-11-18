@@ -19,15 +19,14 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.SysConfig;
+import org.dinky.data.model.SysConfig;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * SysConfig
  *
- * @author wenmo
  * @since 2021/11/18
  */
 @Mapper

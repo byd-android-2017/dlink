@@ -19,9 +19,9 @@
 
 package org.dinky.explainer.lineage;
 
-import org.dinky.executor.Executor;
+import org.dinky.data.model.LineageRel;
+import org.dinky.executor.ExecutorFactory;
 import org.dinky.explainer.Explainer;
-import org.dinky.model.LineageRel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,13 +31,12 @@ import java.util.Map;
 /**
  * LineageBuilder
  *
- * @author wenmo
  * @since 2022/3/15 22:58
  */
 public class LineageBuilder {
 
     public static LineageResult getColumnLineageByLogicalPlan(String statement) {
-        Explainer explainer = new Explainer(Executor.build(), false);
+        Explainer explainer = new Explainer(ExecutorFactory.getDefaultExecutor(), false);
         List<LineageRel> lineageRelList = explainer.getLineage(statement);
         List<LineageRelation> relations = new ArrayList<>();
         Map<String, LineageTable> tableMap = new HashMap<>();
@@ -50,8 +49,7 @@ public class LineageBuilder {
             if (tableMap.containsKey(sourceTablePath)) {
                 LineageTable lineageTable = tableMap.get(sourceTablePath);
                 LineageColumn lineageColumn =
-                        LineageColumn.build(
-                                lineageRel.getSourceColumn(), lineageRel.getSourceColumn());
+                        LineageColumn.build(lineageRel.getSourceColumn(), lineageRel.getSourceColumn());
                 if (!lineageTable.getColumns().contains(lineageColumn)) {
                     lineageTable.getColumns().add(lineageColumn);
                 }
@@ -61,10 +59,7 @@ public class LineageBuilder {
                 LineageTable lineageTable = LineageTable.build(tableIndex + "", sourceTablePath);
                 lineageTable
                         .getColumns()
-                        .add(
-                                LineageColumn.build(
-                                        lineageRel.getSourceColumn(),
-                                        lineageRel.getSourceColumn()));
+                        .add(LineageColumn.build(lineageRel.getSourceColumn(), lineageRel.getSourceColumn()));
                 tableMap.put(sourceTablePath, lineageTable);
                 sourceTableId = lineageTable.getId();
             }
@@ -72,8 +67,7 @@ public class LineageBuilder {
             if (tableMap.containsKey(targetTablePath)) {
                 LineageTable lineageTable = tableMap.get(targetTablePath);
                 LineageColumn lineageColumn =
-                        LineageColumn.build(
-                                lineageRel.getTargetColumn(), lineageRel.getTargetColumn());
+                        LineageColumn.build(lineageRel.getTargetColumn(), lineageRel.getTargetColumn());
                 if (!lineageTable.getColumns().contains(lineageColumn)) {
                     lineageTable.getColumns().add(lineageColumn);
                 }
@@ -83,19 +77,12 @@ public class LineageBuilder {
                 LineageTable lineageTable = LineageTable.build(tableIndex + "", targetTablePath);
                 lineageTable
                         .getColumns()
-                        .add(
-                                LineageColumn.build(
-                                        lineageRel.getTargetColumn(),
-                                        lineageRel.getTargetColumn()));
+                        .add(LineageColumn.build(lineageRel.getTargetColumn(), lineageRel.getTargetColumn()));
                 tableMap.put(targetTablePath, lineageTable);
                 targetTableId = lineageTable.getId();
             }
-            LineageRelation lineageRelation =
-                    LineageRelation.build(
-                            sourceTableId,
-                            targetTableId,
-                            lineageRel.getSourceColumn(),
-                            lineageRel.getTargetColumn());
+            LineageRelation lineageRelation = LineageRelation.build(
+                    sourceTableId, targetTableId, lineageRel.getSourceColumn(), lineageRel.getTargetColumn());
             if (!relations.contains(lineageRelation)) {
                 relIndex++;
                 lineageRelation.setId(relIndex + "");

@@ -21,8 +21,8 @@ package org.dinky.aop;
 
 import org.dinky.classloader.DinkyClassLoader;
 import org.dinky.context.DinkyClassLoaderContextHolder;
+import org.dinky.data.exception.DinkyException;
 import org.dinky.job.JobResult;
-import org.dinky.process.exception.DinkyException;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -32,10 +32,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * @author ZackYoung
- * @since 0.7.0
- */
+/** @since 0.7.0 */
 @Aspect
 @Component
 @Slf4j
@@ -63,6 +60,8 @@ public class UdfClassLoaderAspect {
             if (!(e instanceof DinkyException)) {
                 throw new DinkyException(e);
             }
+            e.printStackTrace();
+            throw (DinkyException) e;
         } finally {
             if (proceed instanceof JobResult) {
                 ClassLoader lastContextClassLoader = Thread.currentThread().getContextClassLoader();

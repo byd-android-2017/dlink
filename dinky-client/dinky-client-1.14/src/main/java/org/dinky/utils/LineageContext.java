@@ -19,62 +19,59 @@
 
 package org.dinky.utils;
 
-import org.dinky.model.LineageRel;
+import org.dinky.data.model.FunctionResult;
+import org.dinky.data.model.LineageRel;
 
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.internal.TableEnvironmentImpl;
-import org.apache.flink.table.catalog.CatalogManager;
 import org.apache.flink.table.catalog.FunctionCatalog;
+import org.apache.flink.table.catalog.UnresolvedIdentifier;
 import org.apache.flink.table.operations.CatalogSinkModifyOperation;
 import org.apache.flink.table.operations.Operation;
-import org.apache.flink.table.planner.calcite.FlinkRelBuilder;
-import org.apache.flink.table.planner.calcite.SqlExprToRexConverterFactory;
+import org.apache.flink.table.planner.delegation.ParserImpl;
 import org.apache.flink.table.planner.delegation.PlannerBase;
 import org.apache.flink.table.planner.operations.PlannerQueryOperation;
-import org.apache.flink.table.planner.plan.optimize.program.FlinkChainedProgram;
-import org.apache.flink.table.planner.plan.optimize.program.StreamOptimizeContext;
 import org.apache.flink.table.planner.plan.schema.TableSourceTable;
-import org.apache.flink.table.planner.plan.trait.MiniBatchInterval;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * LineageContext
  *
- * @author baisong
  * @since 2022/8/6 11:06
  */
 public class LineageContext {
 
-    private final FlinkChainedProgram flinkChainedProgram;
+    private static final Logger LOG = LoggerFactory.getLogger(LineageContext.class);
+
     private final TableEnvironmentImpl tableEnv;
 
-    public LineageContext(FlinkChainedProgram flinkChainedProgram, TableEnvironmentImpl tableEnv) {
-        this.flinkChainedProgram = flinkChainedProgram;
+    public LineageContext(TableEnvironmentImpl tableEnv) {
         this.tableEnv = tableEnv;
     }
 
-    public List<LineageRel> getLineage(String statement) {
+    public List<LineageRel> analyzeLineage(String statement) {
         // 1. Generate original relNode tree
         Tuple2<String, RelNode> parsed = parseStatement(statement);
         String sinkTable = parsed.getField(0);
         RelNode oriRelNode = parsed.getField(1);
 
-        // 2. Optimize original relNode to generate Optimized Logical Plan
-        RelNode optRelNode = optimize(oriRelNode);
-
-        // 3. Build lineage based from RelMetadataQuery
-        return buildFiledLineageResult(sinkTable, optRelNode);
+        // 2. Build lineage based from RelMetadataQuery
+        return buildFiledLineageResult(sinkTable, oriRelNode);
     }
 
     private Tuple2<String, RelNode> parseStatement(String sql) {
@@ -95,78 +92,15 @@ public class LineageContext {
         }
     }
 
-    /** Calling each program's optimize method in sequence. */
-    private RelNode optimize(RelNode relNode) {
-        return flinkChainedProgram.optimize(
-                relNode,
-                new StreamOptimizeContext() {
-
-                    @Override
-                    public boolean isBatchMode() {
-                        return false;
-                    }
-
-                    @Override
-                    public TableConfig getTableConfig() {
-                        return tableEnv.getConfig();
-                    }
-
-                    @Override
-                    public FunctionCatalog getFunctionCatalog() {
-                        return getPlanner().getFlinkContext().getFunctionCatalog();
-                    }
-
-                    @Override
-                    public CatalogManager getCatalogManager() {
-                        return tableEnv.getCatalogManager();
-                    }
-
-                    @Override
-                    public SqlExprToRexConverterFactory getSqlExprToRexConverterFactory() {
-                        return getPlanner().getFlinkContext().getSqlExprToRexConverterFactory();
-                    }
-
-                    @Override
-                    public <C> C unwrap(Class<C> clazz) {
-                        return getPlanner().getFlinkContext().unwrap(clazz);
-                    }
-
-                    @Override
-                    public FlinkRelBuilder getFlinkRelBuilder() {
-                        return getPlanner().getRelBuilder();
-                    }
-
-                    @Override
-                    public boolean needFinalTimeIndicatorConversion() {
-                        return true;
-                    }
-
-                    @Override
-                    public boolean isUpdateBeforeRequired() {
-                        return false;
-                    }
-
-                    @Override
-                    public MiniBatchInterval getMiniBatchInterval() {
-                        return MiniBatchInterval.NONE;
-                    }
-
-                    private PlannerBase getPlanner() {
-                        return (PlannerBase) tableEnv.getPlanner();
-                    }
-                });
-    }
-
     /** Check the size of query and sink fields match */
     private void validateSchema(String sinkTable, RelNode relNode, List<String> sinkFieldList) {
         List<String> queryFieldList = relNode.getRowType().getFieldNames();
         if (queryFieldList.size() != sinkFieldList.size()) {
-            throw new ValidationException(
-                    String.format(
-                            "Column types of query result and sink for %s do not match.\n"
-                                    + "Query schema: %s\n"
-                                    + "Sink schema:  %s",
-                            sinkTable, queryFieldList, sinkFieldList));
+            throw new ValidationException(String.format(
+                    "Column types of query result and sink for %s do not match.\n"
+                            + "Query schema: %s\n"
+                            + "Sink schema:  %s",
+                    sinkTable, queryFieldList, sinkFieldList));
         }
     }
 
@@ -184,8 +118,7 @@ public class LineageContext {
         for (int index = 0; index < targetColumnList.size(); index++) {
             String targetColumn = targetColumnList.get(index);
 
-            Set<RelColumnOrigin> relColumnOriginSet =
-                    metadataQuery.getColumnOrigins(optRelNode, index);
+            Set<RelColumnOrigin> relColumnOriginSet = metadataQuery.getColumnOrigins(optRelNode, index);
 
             if (CollectionUtils.isNotEmpty(relColumnOriginSet)) {
                 for (RelColumnOrigin relColumnOrigin : relColumnOriginSet) {
@@ -195,19 +128,63 @@ public class LineageContext {
 
                     // filed
                     int ordinal = relColumnOrigin.getOriginColumnOrdinal();
-                    List<String> fieldNames =
-                            ((TableSourceTable) table)
-                                    .catalogTable()
-                                    .getResolvedSchema()
-                                    .getColumnNames();
+                    List<String> fieldNames = ((TableSourceTable) table)
+                            .catalogTable()
+                            .getResolvedSchema()
+                            .getColumnNames();
                     String sourceColumn = fieldNames.get(ordinal);
 
                     // add record
-                    resultList.add(
-                            LineageRel.build(sourceTable, sourceColumn, sinkTable, targetColumn));
+                    resultList.add(LineageRel.build(
+                            sourceTable, sourceColumn, sinkTable, targetColumn, relColumnOrigin.getTransform()));
                 }
             }
         }
         return resultList;
+    }
+
+    /**
+     *  Analyze custom functions from SQL, does not contain system functions.
+     *
+     * @param singleSql the SQL statement to analyze
+     * @return custom functions set
+     */
+    public Set<FunctionResult> analyzeFunction(String singleSql) {
+        LOG.info("Analyze function Sql: \n {}", singleSql);
+        ParserImpl parser = (ParserImpl) tableEnv.getParser();
+
+        // parsing sql and return the abstract syntax tree
+        SqlNode sqlNode = parser.parseSql(singleSql);
+
+        // validate the query
+        SqlNode validated = parser.validate(sqlNode);
+
+        // look for all functions
+        FunctionVisitor visitor = new FunctionVisitor();
+        validated.accept(visitor);
+        List<UnresolvedIdentifier> fullFunctionList = visitor.getFunctionList();
+
+        // filter custom functions
+        Set<FunctionResult> resultSet = new HashSet<>();
+        for (UnresolvedIdentifier unresolvedIdentifier : fullFunctionList) {
+            getFunctionCatalog()
+                    .lookupFunction(unresolvedIdentifier)
+                    // the objectIdentifier of the built-in function is null
+                    .flatMap(e -> e.getFunctionIdentifier().getIdentifier())
+                    .ifPresent(identifier -> {
+                        FunctionResult functionResult = new FunctionResult()
+                                .setCatalogName(identifier.getCatalogName())
+                                .setDatabase(identifier.getDatabaseName())
+                                .setFunctionName(identifier.getObjectName());
+                        LOG.debug("analyzed function: {}", functionResult);
+                        resultSet.add(functionResult);
+                    });
+        }
+        return resultSet;
+    }
+
+    private FunctionCatalog getFunctionCatalog() {
+        PlannerBase planner = (PlannerBase) tableEnv.getPlanner();
+        return planner.getFlinkContext().getFunctionCatalog();
     }
 }

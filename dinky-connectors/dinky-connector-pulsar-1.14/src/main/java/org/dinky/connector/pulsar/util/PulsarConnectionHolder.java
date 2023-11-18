@@ -30,11 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author DarrenDa
- * * @version 1.0
- * * @Desc:
- */
+/** * @version 1.0 * @Desc: */
 public class PulsarConnectionHolder {
     private static final Logger LOG = LoggerFactory.getLogger(PulsarConnectionHolder.class);
     private static final Map<String, PulsarClientImpl> PULSAR_CLIENT_MAP = new ConcurrentHashMap<>();
@@ -55,9 +51,11 @@ public class PulsarConnectionHolder {
                 return pulsarClient;
             }
 
-            // return PULSAR_CLIENT_MAP.computeIfAbsent(pulsarClientCacheKey, serviceUrlTag -> createPulsarClient(serviceUrl));
+            // return PULSAR_CLIENT_MAP.computeIfAbsent(pulsarClientCacheKey, serviceUrlTag ->
+            // createPulsarClient(serviceUrl));
             PulsarClientImpl pulsarClientImpl = createPulsarClient(serviceUrl, properties);
-            PulsarClientImpl newPulsarClientImpl = PULSAR_CLIENT_MAP.putIfAbsent(pulsarClientCacheKey, pulsarClientImpl);
+            PulsarClientImpl newPulsarClientImpl =
+                    PULSAR_CLIENT_MAP.putIfAbsent(pulsarClientCacheKey, pulsarClientImpl);
             if (newPulsarClientImpl == null) {
                 return pulsarClientImpl;
             }
@@ -71,10 +69,12 @@ public class PulsarConnectionHolder {
 
     private static PulsarClientImpl createPulsarClient(String serviceUrl, Properties properties) {
         try {
-            LOG.info("create client, and ID is " + UUID.randomUUID() + ", and cache map size is " + PULSAR_CLIENT_MAP.size());
+            LOG.info("create client, and ID is "
+                    + UUID.randomUUID()
+                    + ", and cache map size is "
+                    + PULSAR_CLIENT_MAP.size());
 
-            return (PulsarClientImpl) PulsarClient
-                    .builder()
+            return (PulsarClientImpl) PulsarClient.builder()
                     .serviceUrl(serviceUrl)
                     .maxNumberOfRejectedRequestPerConnection(50)
                     .loadConf((Map) properties)

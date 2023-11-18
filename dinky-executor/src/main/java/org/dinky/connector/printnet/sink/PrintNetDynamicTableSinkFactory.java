@@ -37,6 +37,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class PrintNetDynamicTableSinkFactory implements DynamicTableSinkFactory {
     public static final String IDENTIFIER = "printnet";
 
@@ -46,32 +49,25 @@ public class PrintNetDynamicTableSinkFactory implements DynamicTableSinkFactory 
     public static final ConfigOption<Integer> PORT =
             ConfigOptions.key("port").intType().noDefaultValue();
 
-    public static final ConfigOption<String> PRINT_IDENTIFIER =
-            key("print-identifier")
-                    .stringType()
-                    .noDefaultValue()
-                    .withDescription(
-                            "Message that identify print and is prefixed to the output of the value.");
+    public static final ConfigOption<String> PRINT_IDENTIFIER = key("print-identifier")
+            .stringType()
+            .noDefaultValue()
+            .withDescription("Message that identify print and is prefixed to the output of the" + " value.");
 
     @Override
     public DynamicTableSink createDynamicTableSink(Context context) {
-        final FactoryUtil.TableFactoryHelper helper =
-                FactoryUtil.createTableFactoryHelper(this, context);
-
-        ObjectIdentifier objectIdentifier = context.getObjectIdentifier();
-
+        final FactoryUtil.TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
         final ReadableConfig options = helper.getOptions();
 
+        ObjectIdentifier objectIdentifier = context.getObjectIdentifier();
         FactoryUtil.validateFactoryOptions(this, options);
-
         EncodingFormat<SerializationSchema<RowData>> serializingFormat = null;
 
         try {
-            // TODO: 2023/3/17 maybe not right
-            serializingFormat =
-                    helper.discoverEncodingFormat(
-                            SerializationFormatFactory.class, FactoryUtil.FORMAT);
+            // keep no serialization schema for changelog mode now, you can implement it by yourself
+            serializingFormat = helper.discoverEncodingFormat(SerializationFormatFactory.class, FactoryUtil.FORMAT);
         } catch (Exception ignored) {
+            log.debug("Could not create serialization format for '{}'.", objectIdentifier, ignored);
         }
 
         return new PrintNetDynamicTableSink(
@@ -80,7 +76,6 @@ public class PrintNetDynamicTableSinkFactory implements DynamicTableSinkFactory 
                 serializingFormat,
                 options.get(HOSTNAME),
                 options.get(PORT),
-                options.get(FactoryUtil.SINK_PARALLELISM),
                 options.get(PRINT_IDENTIFIER),
                 objectIdentifier);
     }
@@ -97,7 +92,6 @@ public class PrintNetDynamicTableSinkFactory implements DynamicTableSinkFactory 
 
     @Override
     public Set<ConfigOption<?>> optionalOptions() {
-        return new HashSet<>(
-                Arrays.asList(PRINT_IDENTIFIER, FactoryUtil.SINK_PARALLELISM, FactoryUtil.FORMAT));
+        return new HashSet<>(Arrays.asList(PRINT_IDENTIFIER, FactoryUtil.FORMAT));
     }
 }

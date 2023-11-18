@@ -20,10 +20,10 @@
 package org.dinky.gateway.yarn;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.gateway.GatewayType;
+import org.dinky.data.model.SystemConfiguration;
+import org.dinky.gateway.enums.GatewayType;
 import org.dinky.gateway.result.GatewayResult;
 import org.dinky.gateway.result.YarnResult;
-import org.dinky.model.SystemConfiguration;
 import org.dinky.utils.LogUtil;
 
 import org.apache.flink.client.deployment.ClusterSpecification;
@@ -46,7 +46,6 @@ import cn.hutool.core.util.URLUtil;
 /**
  * YarnApplicationGateway
  *
- * @author wenmo
  * @since 2021/10/29
  */
 public class YarnPerJobGateway extends YarnGateway {
@@ -63,10 +62,9 @@ public class YarnPerJobGateway extends YarnGateway {
         }
 
         if (Asserts.isNotNull(config.getJarPaths())) {
-            jobGraph.addJars(
-                    Arrays.stream(config.getJarPaths())
-                            .map(path -> URLUtil.getURL(FileUtil.file(path)))
-                            .collect(Collectors.toList()));
+            jobGraph.addJars(Arrays.stream(config.getJarPaths())
+                    .map(path -> URLUtil.getURL(FileUtil.file(path)))
+                    .collect(Collectors.toList()));
         }
 
         ClusterSpecification.ClusterSpecificationBuilder clusterSpecificationBuilder =
@@ -74,16 +72,14 @@ public class YarnPerJobGateway extends YarnGateway {
 
         YarnResult result = YarnResult.build(getType());
         try (YarnClusterDescriptor yarnClusterDescriptor = createInitYarnClusterDescriptor()) {
-            ClusterClientProvider<ApplicationId> clusterClientProvider =
-                    yarnClusterDescriptor.deployJobCluster(
-                            clusterSpecificationBuilder.createClusterSpecification(),
-                            jobGraph,
-                            true);
+            ClusterClientProvider<ApplicationId> clusterClientProvider = yarnClusterDescriptor.deployJobCluster(
+                    clusterSpecificationBuilder.createClusterSpecification(), jobGraph, true);
             ClusterClient<ApplicationId> clusterClient = clusterClientProvider.getClusterClient();
             ApplicationId applicationId = clusterClient.getClusterId();
             result.setId(applicationId.toString());
             result.setWebURL(clusterClient.getWebInterfaceURL());
-            Collection<JobStatusMessage> jobStatusMessages = clusterClient.listJobs().get();
+            Collection<JobStatusMessage> jobStatusMessages =
+                    clusterClient.listJobs().get();
             int counts = SystemConfiguration.getInstances().getJobIdWait();
             while (jobStatusMessages.size() == 0 && counts > 0) {
                 Thread.sleep(1000);

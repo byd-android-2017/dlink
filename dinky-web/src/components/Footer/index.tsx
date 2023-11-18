@@ -25,7 +25,9 @@ const Footer: React.FC = () => {
   return (
     <DefaultFooter
       style={{
-        background: 'none',
+        background: 'url(/icons/footer-bg.svg) 100% 100% no-repeat',
+        backgroundSize: 'cover',
+        bottom: 0
       }}
       copyright={`${currentYear} ` + l('app.copyright.produced')}
       links={[
@@ -33,14 +35,14 @@ const Footer: React.FC = () => {
           key: 'Dinky',
           title: 'Dinky',
           href: 'https://github.com/DataLinkDC/dinky',
-          blankTarget: true,
+          blankTarget: true
         },
         {
           key: 'github',
           title: <GithubOutlined />,
           href: 'https://github.com/DataLinkDC/dinky',
-          blankTarget: true,
-        },
+          blankTarget: true
+        }
       ]}
     />
   );

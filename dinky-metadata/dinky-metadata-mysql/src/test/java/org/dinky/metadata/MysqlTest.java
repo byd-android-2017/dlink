@@ -27,13 +27,13 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
-import org.dinky.constant.CommonConstant;
+import org.dinky.data.constant.CommonConstant;
+import org.dinky.data.model.Column;
+import org.dinky.data.model.Schema;
 import org.dinky.metadata.driver.Driver;
 import org.dinky.metadata.driver.DriverConfig;
 import org.dinky.metadata.driver.MySqlDriver;
 import org.dinky.metadata.result.JdbcSelectResult;
-import org.dinky.model.Column;
-import org.dinky.model.Schema;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -53,7 +53,6 @@ import com.alibaba.druid.pool.DruidDataSource;
 /**
  * MysqlTest
  *
- * @author wenmo
  * @since 2021/7/20 15:32
  */
 public class MysqlTest {
@@ -70,11 +69,10 @@ public class MysqlTest {
         config.setPort(3306);
         config.setUsername("dca");
         config.setPassword("dca");
-        config.setUrl(
-                "jdbc:mysql://"
-                        + IP
-                        + ":3306/dca?zeroDateTimeBehavior=convertToNull&useUnicode=true&characterEncoding=UTF-8"
-                        + "&serverTimezone=UTC&autoReconnect=true");
+        config.setUrl("jdbc:mysql://"
+                + IP
+                + ":3306/dca?zeroDateTimeBehavior=convertToNull&useUnicode=true&characterEncoding=UTF-8"
+                + "&serverTimezone=UTC&autoReconnect=true");
         return Driver.build(config);
     }
 

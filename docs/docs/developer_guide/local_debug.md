@@ -165,7 +165,7 @@ spring:
 
 ### 初始化数据库
 
-在MySQL数据库创建 dlink 用户并在 dlink 数据库中执行 dlink-doc/sql/dinky.sql 文件。此外 dlink-doc/sql/upgrade 目录下存放了了各版本的升级 sql 请依次按照版本号执行。
+在MySQL数据库创建 dlink 用户并在 dlink 数据库中执行 script/sql/dinky-mysql.sql 文件。此外 script/sql/upgrade 目录下存放了了各版本的升级 sql 请依次按照版本号执行。
 
 以上文件修改完成后，就可以启动Dinky。
 
@@ -214,8 +214,6 @@ dlink--父项目
     |-dlink-app--Application Jar
     |-dlink-assembly--打包配置
     |-dlink-client--Client 中心
-    | |-dlink-client-1.11--Client-1.11实现
-    | |-dlink-client-1.12--Client-1.12实现
     | |-dlink-client-1.13--Client-1.13实现
     | |-dlink-client-1.14--Client-1.14实现
     |-dlink-common--通用中心

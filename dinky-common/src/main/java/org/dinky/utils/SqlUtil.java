@@ -20,19 +20,21 @@
 package org.dinky.utils;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.model.SystemConfiguration;
+import org.dinky.data.model.SystemConfiguration;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * SqlUtil
  *
- * @author wenmo
  * @since 2021/7/14 21:57
  */
 public class SqlUtil {
 
     private static final String SEMICOLON = ";";
+
+    private SqlUtil() {}
 
     public static String[] getStatements(String sql) {
         return getStatements(sql, SystemConfiguration.getInstances().getSqlSeparator());
@@ -53,12 +55,14 @@ public class SqlUtil {
     }
 
     public static String removeNote(String sql) {
+
         if (Asserts.isNotNullString(sql)) {
-            sql =
-                    sql.replaceAll("\u00A0", " ")
-                            .replaceAll("[\r\n]+", "\n")
-                            .replaceAll("--([^'\n]{0,}('[^'\n]{0,}'){0,1}[^'\n]{0,}){0,}", "")
-                            .trim();
+            // Remove the special-space characters
+            sql = sql.replaceAll("\u00A0", " ").replaceAll("[\r\n]+", "\n");
+            // Remove annotations Support '--aa' , '/**aaa*/' , '//aa' , '#aaa'
+            Pattern p = Pattern.compile("(?ms)('(?:''|[^'])*')|--.*?$|//.*?$|/\\*[^+].*?\\*/|#.*?$|");
+            String presult = p.matcher(sql).replaceAll("$1");
+            return presult.trim();
         }
         return sql;
     }

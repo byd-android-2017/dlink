@@ -19,10 +19,12 @@
 
 package org.dinky.service;
 
-import org.dinky.common.result.Result;
-import org.dinky.db.service.ISuperService;
-import org.dinky.model.Tenant;
-import org.dinky.params.AssignUserToTenantParams;
+import org.dinky.data.dto.AssignUserToTenantDTO;
+import org.dinky.data.model.rbac.Tenant;
+import org.dinky.data.result.Result;
+import org.dinky.mybatis.service.ISuperService;
+
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -61,26 +63,23 @@ public interface TenantService extends ISuperService<Tenant> {
     Tenant getTenantByTenantCode(String tenantCode);
 
     /**
+     * query tenant list by user id
+     * @param userId user id
+     * @return tenant list
+     */
+    List<Tenant> getTenantListByUserId(Integer userId);
+
+    /**
      * @param tenant tenant info
      * @return modify code
      */
     boolean modifyTenant(Tenant tenant);
 
     /**
-     * distribute users to tenant , this method will be {@link Deprecated} in the future, please use
-     * {@link #assignUserToTenant(AssignUserToTenantParams)}
-     *
-     * @param para {@link JsonNode}
-     * @return {@link Result} of {@link Void}
-     */
-    @Deprecated
-    Result<Void> distributeUsers(JsonNode para);
-
-    /**
      * assignUserToTenant users to tenant
      *
-     * @param assignUserToTenantParams {@link AssignUserToTenantParams}
+     * @param assignUserToTenantDTO {@link AssignUserToTenantDTO}
      * @return {@link Result} of {@link Void}
      */
-    Result<Void> assignUserToTenant(AssignUserToTenantParams assignUserToTenantParams);
+    Result<Void> assignUserToTenant(AssignUserToTenantDTO assignUserToTenantDTO);
 }

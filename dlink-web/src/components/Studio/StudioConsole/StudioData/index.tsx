@@ -17,59 +17,127 @@
  *
  */
 
-import {Input, Space} from "antd";
-import {StateType} from "@/pages/DataStudio/model";
+import {Modal, Select, Tabs} from "antd";
 import {registerWatchTable, unRegisterWatchTable} from "@/pages/DataStudio/service";
-import {connect} from "umi";
-import {useEffect, useRef, useState} from "react";
+import {Component, useEffect, useState} from "react";
 import stompClientUtil from "@/utils/stompClientUtil"
 import {Scrollbars} from 'react-custom-scrollbars';
 import CodeShow from "@/components/Common/CodeShow";
+import {l} from "@/utils/intl";
+import {clearConsole, getWatchTables} from "@/components/Studio/StudioEvent/DDL";
+import {StateType} from "@/pages/DataStudio/model";
+import {connect} from "umi";
+import {Subscription} from "stompjs";
+import {Option} from "antd/es/mentions";
 
-const {Search} = Input;
+const {TabPane} = Tabs;
 
-
-const StudioData = (props: any) => {
-
-  const {height, isActive} = props;
+const DatePage = (props: any) => {
+  const {height, title} = props;
+  const {stompClient} = props;
+  const [subScription, setSubScription] = useState<Subscription>();
   const [consoleInfo, setConsoleInfo] = useState<string>("");
-  const preConsoleInfo = useRef(consoleInfo)
   const [tableName, setTableName] = useState<string>("");
-  const preTableNameRef = useRef(tableName)
   let consoleHeight = (height - 37.6);
   const id = Number(localStorage.getItem('dlink-tenantId'));
 
   const onSearchName = (value: string) => {
-    unRegisterWatchTable({id, table: preTableNameRef.current}).then(res => {
-      setConsoleInfo("")
-      stompClientUtil.unsubscribe();
-
-      registerWatchTable({id, table: value}).then(res => {
-        stompClientUtil.subScription = stompClientUtil.stompClient.subscribe(res.msg, (res: any) => {
-          preConsoleInfo.current = preConsoleInfo.current + "\n" + res.body
-          if (preConsoleInfo.current.length > 1024 * 1024) {
-            preConsoleInfo.current = preConsoleInfo.current.substring(1024, preConsoleInfo.current.length)
-          }
-          setConsoleInfo(preConsoleInfo.current);
-        })
-      })
+    registerWatchTable({id, table: value}).then(res => {
+      let ss = stompClient.subscribe(res.msg, (res: any) => {
+        setConsoleInfo(preConsoleInfo => preConsoleInfo + "\n" + res.body);
+      });
+      setSubScription(ss);
     })
 
     setTableName(value)
   };
 
   useEffect(() => {
-    stompClientUtil.connect();
-  }, [isActive])
+    return () => {
+      unRegisterWatchTable({id, table: tableName}).then(res => {
+        subScription?.unsubscribe();
+      });
+    }
+  }, [subScription]);
+
+  const editorDidMountHandle = (editor: any, monaco: any) => {
+    onSearchName(title);
+    editor.addAction({
+      id: 'btn-studio-data-clear',
+      label: l('pages.datastudio.editor.clearConsole'),
+      contextMenuGroupId: '9_cutcopypaste',
+      run: () => {
+        clearConsole().then((result) => {
+          setConsoleInfo("")
+        });
+      },
+    })
+  };
 
   return (<div style={{width: '100%'}}>
-    <Space direction="horizontal" style={{margin: 10}}>
-      <Search placeholder="table name" onSearch={onSearchName} style={{width: 200}}/>
-    </Space>
     <Scrollbars style={{height: consoleHeight}}>
-      <CodeShow code={consoleInfo} language='text' height={height} theme="vs-dark" />
+      <CodeShow code={consoleInfo} language='text' height={height} theme="vs-dark"
+                editorDidMountHandle={editorDidMountHandle}/>
     </Scrollbars>
   </div>)
+};
+
+const StudioData = (props: any) => {
+  const {height, current} = props;
+  const [panes, setPanes] = useState<[{ title: string, key: string, content: Component }]>([]);
+
+  const addTab = async () => {
+    let title: string
+    if (current == undefined) {
+      return
+    }
+
+    const result = await getWatchTables(current.value);
+    let tables: [string] = result.datas
+    Modal.confirm({
+      title: 'Please select table name',
+      content: <Select defaultValue="" style={{width: 120}} onChange={e => title = e}>
+        {tables.map(t => (
+          <Option value={t}>{t}</Option>
+        ))
+        }
+      </Select>,
+      onOk() {
+        const activeKey = `${panes!.length + 1}`;
+        const newPanes = [...panes!];
+        newPanes.push({
+          title: title,
+          content: <DatePage height={height} title={title} stompClient={stompClientUtil.stompClient}/>,
+          key: activeKey
+        });
+        setPanes(newPanes);
+      }
+    });
+  };
+
+  useEffect(() => {
+    stompClientUtil.connect();
+    return () => {
+      stompClientUtil.disconnect();
+    }
+  }, [])
+
+  return (<>
+    <Tabs type="editable-card" onEdit={(targetKey, action) => {
+      if (action === 'add') {
+        addTab();
+      } else if (action === 'remove') {
+        const newPanes = panes!.filter((pane) => pane.key !== targetKey);
+        setPanes(newPanes);
+      }
+    }}>
+      {panes!.map((pane) => (
+        <TabPane tab={pane.title} key={pane.key}>
+          {pane.content}
+        </TabPane>
+      ))}
+    </Tabs>
+  </>);
 };
 
 export default connect(({Studio}: { Studio: StateType }) => ({

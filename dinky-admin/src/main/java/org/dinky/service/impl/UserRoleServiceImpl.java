@@ -19,10 +19,10 @@
 
 package org.dinky.service.impl;
 
-import org.dinky.db.service.impl.SuperServiceImpl;
+import org.dinky.data.model.rbac.Role;
+import org.dinky.data.model.rbac.UserRole;
 import org.dinky.mapper.UserRoleMapper;
-import org.dinky.model.Role;
-import org.dinky.model.UserRole;
+import org.dinky.mybatis.service.impl.SuperServiceImpl;
 import org.dinky.service.UserRoleService;
 
 import java.util.List;
@@ -33,8 +33,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 @Service
-public class UserRoleServiceImpl extends SuperServiceImpl<UserRoleMapper, UserRole>
-        implements UserRoleService {
+public class UserRoleServiceImpl extends SuperServiceImpl<UserRoleMapper, UserRole> implements UserRoleService {
 
     @Override
     public int delete(int userId) {

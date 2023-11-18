@@ -36,9 +36,8 @@ import org.slf4j.LoggerFactory;
 /**
  * PhoneixJdbcConnectionProvider
  *
- * @author gy
  * @since 2022/3/17 9:04
- **/
+ */
 public class PhoneixJdbcConnectionProvider implements JdbcConnectionProvider, Serializable {
 
     private static final Logger LOG = LoggerFactory.getLogger(PhoneixJdbcConnectionProvider.class);
@@ -53,11 +52,11 @@ public class PhoneixJdbcConnectionProvider implements JdbcConnectionProvider, Se
         this.jdbcOptions = jdbcOptions;
     }
 
-    public PhoneixJdbcConnectionProvider(JdbcConnectionOptions jdbcOptions, boolean namespaceMappingEnabled, boolean mapSystemTablesEnabled) {
+    public PhoneixJdbcConnectionProvider(
+            JdbcConnectionOptions jdbcOptions, boolean namespaceMappingEnabled, boolean mapSystemTablesEnabled) {
         this.jdbcOptions = jdbcOptions;
         this.namespaceMappingEnabled = namespaceMappingEnabled;
         this.mapSystemTablesEnabled = mapSystemTablesEnabled;
-
     }
 
     public Connection getConnection() {
@@ -75,7 +74,8 @@ public class PhoneixJdbcConnectionProvider implements JdbcConnectionProvider, Se
         Driver driver;
         do {
             if (!drivers.hasMoreElements()) {
-                Class clazz = Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
+                Class clazz =
+                        Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
 
                 try {
                     return (Driver) clazz.newInstance();
@@ -103,7 +103,8 @@ public class PhoneixJdbcConnectionProvider implements JdbcConnectionProvider, Se
             return this.connection;
         } else {
             if (this.jdbcOptions.getDriverName() == null) {
-                this.connection = DriverManager.getConnection(this.jdbcOptions.getDbURL(),
+                this.connection = DriverManager.getConnection(
+                        this.jdbcOptions.getDbURL(),
                         (String) this.jdbcOptions.getUsername().orElse((String) null),
                         (String) this.jdbcOptions.getPassword().orElse((String) null));
             } else {
@@ -116,7 +117,7 @@ public class PhoneixJdbcConnectionProvider implements JdbcConnectionProvider, Se
                     info.setProperty("password", password);
                 });
 
-                if (this.namespaceMappingEnabled  && this.mapSystemTablesEnabled) {
+                if (this.namespaceMappingEnabled && this.mapSystemTablesEnabled) {
                     info.setProperty("phoenix.schema.isNamespaceMappingEnabled", "true");
                     info.setProperty("phoenix.schema.mapSystemTablesToNamespace", "true");
                 }
@@ -143,7 +144,6 @@ public class PhoneixJdbcConnectionProvider implements JdbcConnectionProvider, Se
                 this.connection = null;
             }
         }
-
     }
 
     public Connection reestablishConnection() throws SQLException, ClassNotFoundException {
@@ -154,5 +154,4 @@ public class PhoneixJdbcConnectionProvider implements JdbcConnectionProvider, Se
     static {
         DriverManager.getDrivers();
     }
-
 }

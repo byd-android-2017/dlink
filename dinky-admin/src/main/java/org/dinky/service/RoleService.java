@@ -19,44 +19,27 @@
 
 package org.dinky.service;
 
-import org.dinky.common.result.ProTableResult;
-import org.dinky.common.result.Result;
-import org.dinky.db.service.ISuperService;
-import org.dinky.model.Role;
+import org.dinky.data.dto.RoleDTO;
+import org.dinky.data.model.rbac.Role;
+import org.dinky.data.model.rbac.User;
+import org.dinky.data.result.ProTableResult;
+import org.dinky.data.result.Result;
+import org.dinky.mybatis.service.ISuperService;
 
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 public interface RoleService extends ISuperService<Role> {
 
     /**
-     * delete role by ids , the method will be {@link Deprecated} in the future , please use {@link
-     * #deleteRoleById(Integer)}
-     *
-     * @param para role id
-     * @return delete result code
-     */
-    @Deprecated
-    Result<Void> deleteRoles(JsonNode para);
-
-    /**
-     * create or update role , the method will be {@link Deprecated} in the future , please use
-     * {@link #addedOrUpdateRole(Role)}
-     *
-     * @param role
-     * @return
-     */
-    @Deprecated
-    Result<Void> saveOrUpdateRole(Role role);
-
-    /**
      * create or update role
      *
-     * @param role {@link Role}
+     * @param roleDTO {@link RoleDTO}
      * @return {@link Result} of {@link Void}
      */
-    Result<Void> addedOrUpdateRole(Role role);
+    Result<Void> addedOrUpdateRole(RoleDTO roleDTO);
 
     @Override
     ProTableResult<Role> selectForProTable(JsonNode para);
@@ -76,4 +59,28 @@ public interface RoleService extends ISuperService<Role> {
      * @return role list
      */
     List<Role> getRoleByUserId(Integer userId);
+
+    /**
+     * Query role permissions based on user ID.
+     *
+     * @param userId user ID
+     * @return permissions
+     */
+    Set<String> selectRolePermissionByUserId(Integer userId);
+
+    /**
+     * Query user role list by user ID.
+     *
+     * @param userId user ID
+     * @return role list
+     */
+    List<Integer> selectRoleListByUserId(Integer userId);
+
+    /**
+     * Get a list of users with the specified role ID.
+     *
+     * @param roleId The ID of the role to filter the users by.
+     * @return A list of {@link User} objects representing the users with the specified role ID.
+     */
+    List<User> getUserListByRoleId(Integer roleId);
 }

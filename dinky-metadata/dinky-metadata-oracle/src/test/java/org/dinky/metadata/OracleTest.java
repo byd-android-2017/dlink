@@ -19,11 +19,11 @@
 
 package org.dinky.metadata;
 
+import org.dinky.data.model.Column;
+import org.dinky.data.model.Schema;
 import org.dinky.metadata.driver.Driver;
 import org.dinky.metadata.driver.DriverConfig;
 import org.dinky.metadata.result.JdbcSelectResult;
-import org.dinky.model.Column;
-import org.dinky.model.Schema;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 /**
  * OracleTest
  *
- * @author wenmo
  * @since 2021/7/21 16:14
  */
 @Ignore
@@ -93,8 +92,7 @@ public class OracleTest {
     @Test
     public void queryTest() {
         Driver driver = getDriver();
-        JdbcSelectResult selectResult =
-                driver.query("select * from CDR.PAT_INFO where ROWNUM<10", 10);
+        JdbcSelectResult selectResult = driver.query("select * from CDR.PAT_INFO where ROWNUM<10", 10);
         LOGGER.info("end...");
     }
 }

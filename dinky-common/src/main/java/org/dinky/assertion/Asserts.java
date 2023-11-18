@@ -19,7 +19,7 @@
 
 package org.dinky.assertion;
 
-import org.dinky.exception.RunTimeException;
+import org.dinky.data.exception.RunTimeException;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +29,6 @@ import java.util.Objects;
 /**
  * Asserts
  *
- * @author wenmo
  * @since 2021/7/5 21:57
  */
 public class Asserts {

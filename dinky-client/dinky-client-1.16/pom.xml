@@ -5,7 +5,8 @@
     <parent>
         <groupId>org.dinky</groupId>
         <artifactId>dinky-client</artifactId>
-        <version>0.8.0</version>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>dinky-client-1.16</artifactId>
 
@@ -17,16 +18,11 @@
         <dependency>
             <groupId>org.dinky</groupId>
             <artifactId>dinky-client-base</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.dinky</groupId>
-            <artifactId>dinky-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.dinky</groupId>
             <artifactId>dinky-flink-1.16</artifactId>
-            <scope>provided</scope>
+            <scope>${scope.runtime}</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -45,6 +41,11 @@
             <groupId>com.sun.xml.bind</groupId>
             <artifactId>jaxb-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -54,7 +55,6 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>${maven-jar-plugin.version}</version>
                 <configuration>
-                    <!-- 指定打包的jar包输出路径 -->
                     <outputDirectory>${project.parent.parent.basedir}/build/extends</outputDirectory>
                 </configuration>
             </plugin>

@@ -54,33 +54,9 @@
             <directory>${project.parent.basedir}/script/sql</directory>
             <outputDirectory>sql</outputDirectory>
             <includes>
-                <include>dinky.sql</include>
+                <include>dinky-mysql.sql</include>
+                <include>dinky-pg.sql</include>
                 <include>upgrade/*/*/*.sql</include>
-            </includes>
-        </fileSet>
-        <!--<fileSet>-->
-        <!--    <directory>${project.parent.basedir}/build/extends/</directory>-->
-        <!--    <outputDirectory>plugins</outputDirectory>-->
-        <!--    <includes>-->
-        <!--        <include>%regex[dinky-catalog-mysql-1.\d+-${project.version}.jar]</include>-->
-        <!--        <include>%regex[dinky-client-1.\d+-${project.version}.jar]</include>-->
-        <!--    </includes>-->
-        <!--</fileSet>-->
-        <fileSet>
-            <directory>${project.parent.basedir}/build/extends/</directory>
-            <outputDirectory>plugins/flink1.12</outputDirectory>
-            <includes>
-                <include>dinky-client-1.12-${project.version}.jar</include>
-                <include>dinky-connector-jdbc-1.12-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.parent.basedir}/build/extends/</directory>
-            <outputDirectory>plugins/flink1.13</outputDirectory>
-            <includes>
-                <include>dinky-catalog-mysql-1.13-${project.version}.jar</include>
-                <include>dinky-client-1.13-${project.version}.jar</include>
-                <include>dinky-connector-jdbc-1.13-${project.version}.jar</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -108,7 +84,22 @@
                 <include>dinky-client-1.16-${project.version}.jar</include>
             </includes>
         </fileSet>
-
+        <fileSet>
+            <directory>${project.parent.basedir}/build/extends/</directory>
+            <outputDirectory>plugins/flink1.17</outputDirectory>
+            <includes>
+                <include>dinky-catalog-mysql-1.17-${project.version}.jar</include>
+                <include>dinky-client-1.17-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}/build/extends/</directory>
+            <outputDirectory>plugins/flink1.18</outputDirectory>
+            <includes>
+                <include>dinky-catalog-mysql-1.18-${project.version}.jar</include>
+                <include>dinky-client-1.18-${project.version}.jar</include>
+            </includes>
+        </fileSet>
         <fileSet>
             <directory>${project.parent.basedir}/build/extends/</directory>
             <outputDirectory>plugins</outputDirectory>
@@ -225,6 +216,14 @@
             <outputDirectory>lib</outputDirectory>
             <includes>
                 <include>dinky-alert-feishu-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.parent.basedir}/dinky-alert/dinky-alert-sms/target
+            </directory>
+            <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>dinky-alert-sms-${project.version}.jar</include>
             </includes>
         </fileSet>
         <fileSet>

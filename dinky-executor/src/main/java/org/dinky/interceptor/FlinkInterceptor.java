@@ -30,7 +30,6 @@ import org.apache.flink.table.api.TableResult;
 /**
  * FlinkInterceptor
  *
- * @author wenmo
  * @since 2021/6/11 22:17
  */
 public class FlinkInterceptor {
@@ -40,7 +39,7 @@ public class FlinkInterceptor {
     public static String pretreatStatement(Executor executor, String statement) {
         statement = SqlUtil.removeNote(statement);
         if (executor.isUseSqlFragment()) {
-            statement = executor.getSqlManager().parseVariable(statement);
+            statement = executor.getVariableManager().parseVariable(statement);
         }
         return statement.trim();
     }

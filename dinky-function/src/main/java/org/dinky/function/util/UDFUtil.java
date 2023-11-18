@@ -22,21 +22,28 @@ package org.dinky.function.util;
 import org.dinky.assertion.Asserts;
 import org.dinky.config.Dialect;
 import org.dinky.context.DinkyClassLoaderContextHolder;
-import org.dinky.context.JarPathContextHolder;
+import org.dinky.context.FlinkUdfPathContextHolder;
+import org.dinky.data.exception.DinkyException;
+import org.dinky.data.model.SystemConfiguration;
 import org.dinky.function.FunctionFactory;
 import org.dinky.function.compiler.CustomStringJavaCompiler;
 import org.dinky.function.compiler.CustomStringScalaCompiler;
 import org.dinky.function.constant.PathConstant;
 import org.dinky.function.data.model.UDF;
 import org.dinky.function.pool.UdfCodePool;
-import org.dinky.gateway.GatewayType;
+import org.dinky.gateway.enums.GatewayType;
 import org.dinky.pool.ClassEntity;
 import org.dinky.pool.ClassPool;
-import org.dinky.process.exception.DinkyException;
 
+import org.apache.flink.client.python.PythonFunctionFactory;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.python.PythonOptions;
+import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.catalog.FunctionLanguage;
+import org.apache.flink.table.functions.UserDefinedFunction;
+import org.apache.flink.table.functions.UserDefinedFunctionHelper;
 
+import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -45,66 +52,65 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 
-import org.codehaus.groovy.control.CompilerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.ClassScanner;
 import cn.hutool.core.lang.Dict;
+import cn.hutool.core.lang.JarClassLoader;
 import cn.hutool.core.lang.Opt;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ClassLoaderUtil;
+import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
 import cn.hutool.extra.template.TemplateConfig;
 import cn.hutool.extra.template.TemplateEngine;
 import cn.hutool.extra.template.engine.freemarker.FreemarkerEngine;
-import groovy.lang.GroovyClassLoader;
 
 /**
  * UDFUtil
  *
- * @author wenmo
  * @since 2021/12/27 23:25
  */
 public class UDFUtil {
 
     public static final String FUNCTION_SQL_REGEX =
-            "create\\s+.*function\\s+(.*)\\s+as\\s+'(.*)'(\\s+language (.*))?";
+            "^CREATE\\s+(?:(?:TEMPORARY|TEMPORARY\\s+SYSTEM)\\s+)?FUNCTION\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?(\\S+)\\s+AS\\s+'(\\S+)'\\s*(?:LANGUAGE\\s+(?:JAVA|SCALA|PYTHON)\\s+)?(?:USING\\s+JAR\\s+'(\\S+)'\\s*(?:,\\s*JAR\\s+'(\\S+)'\\s*)*)?";
+    public static final Pattern PATTERN = Pattern.compile(FUNCTION_SQL_REGEX, Pattern.CASE_INSENSITIVE);
 
     public static final String SESSION = "SESSION";
     public static final String YARN = "YARN";
     public static final String APPLICATION = "APPLICATION";
 
-    /** 网关类型 map 快速获取 session 与 application 等类型，为了减少判断 */
-    public static final Map<String, List<GatewayType>> GATEWAY_TYPE_MAP =
-            MapUtil.builder(
-                            SESSION,
-                            Arrays.asList(
-                                    GatewayType.YARN_SESSION,
-                                    GatewayType.KUBERNETES_SESSION,
-                                    GatewayType.STANDALONE))
-                    .put(
-                            YARN,
-                            Arrays.asList(GatewayType.YARN_APPLICATION, GatewayType.YARN_PER_JOB))
-                    .put(
-                            APPLICATION,
-                            Arrays.asList(
-                                    GatewayType.YARN_APPLICATION,
-                                    GatewayType.KUBERNETES_APPLICATION))
-                    .build();
+    /**
+     * 网关类型 map 快速获取 session 与 application 等类型，为了减少判断
+     */
+    public static final Map<String, List<GatewayType>> GATEWAY_TYPE_MAP = MapUtil.builder(
+                    SESSION,
+                    Arrays.asList(GatewayType.YARN_SESSION, GatewayType.KUBERNETES_SESSION, GatewayType.STANDALONE))
+            .put(YARN, Arrays.asList(GatewayType.YARN_APPLICATION, GatewayType.YARN_PER_JOB))
+            .put(APPLICATION, Arrays.asList(GatewayType.YARN_APPLICATION, GatewayType.KUBERNETES_APPLICATION))
+            .build();
 
     protected static final Logger log = LoggerFactory.getLogger(UDFUtil.class);
-    /** 存放 udf md5与版本对应的k,v值 */
+    /**
+     * 存放 udf md5与版本对应的k,v值
+     */
     protected static final Map<String, Integer> UDF_MD5_MAP = new HashMap<>();
 
-    private static final String FUNCTION_REGEX = "function (.*?)'(.*?)'";
-    private static final String LANGUAGE_REGEX = "language (.*);";
     public static final String PYTHON_UDF_ATTR = "(\\S)\\s+=\\s+ud(?:f|tf|af|taf)";
     public static final String PYTHON_UDF_DEF = "@ud(?:f|tf|af|taf).*\\n+def\\s+(.*)\\(.*\\):";
     public static final String SCALA_UDF_CLASS = "class\\s+(\\w+)(\\s*\\(.*\\)){0,1}\\s+extends";
@@ -114,8 +120,8 @@ public class UDFUtil {
     /**
      * 模板解析
      *
-     * @param dialect 方言
-     * @param template 模板
+     * @param dialect   方言
+     * @param template  模板
      * @param className 类名
      * @return {@link String}
      */
@@ -127,22 +133,15 @@ public class UDFUtil {
             case SCALA:
                 String clazz = CollUtil.getLast(split);
                 String packageName = StrUtil.strip(className, clazz);
-                Dict data =
-                        Dict.create()
-                                .set("className", clazz)
-                                .set(
-                                        "package",
-                                        Asserts.isNullString(packageName)
-                                                ? ""
-                                                : StrUtil.strip(packageName, "."));
+                Dict data = Dict.create()
+                        .set("className", clazz)
+                        .set("package", Asserts.isNullString(packageName) ? "" : StrUtil.strip(packageName, "."));
                 return ENGINE.getTemplate(template).render(data);
             case PYTHON:
             default:
                 String clazzName = split.get(0);
                 Dict data2 =
-                        Dict.create()
-                                .set("className", clazzName)
-                                .set("attr", split.size() > 1 ? split.get(1) : null);
+                        Dict.create().set("className", clazzName).set("attr", split.size() > 1 ? split.get(1) : null);
                 return ENGINE.getTemplate(template).render(data2);
         }
     }
@@ -150,24 +149,17 @@ public class UDFUtil {
     public static String[] initJavaUDF(List<UDF> udf, GatewayType gatewayType, Integer missionId) {
         return FunctionFactory.initUDF(
                         CollUtil.newArrayList(
-                                CollUtil.filterNew(
-                                        udf,
-                                        x -> x.getFunctionLanguage() != FunctionLanguage.PYTHON)),
+                                CollUtil.filterNew(udf, x -> x.getFunctionLanguage() != FunctionLanguage.PYTHON)),
                         missionId,
                         null)
                 .getJarPaths();
     }
 
     public static String[] initPythonUDF(
-            List<UDF> udf,
-            GatewayType gatewayType,
-            Integer missionId,
-            Configuration configuration) {
+            List<UDF> udf, GatewayType gatewayType, Integer missionId, Configuration configuration) {
         return FunctionFactory.initUDF(
                         CollUtil.newArrayList(
-                                CollUtil.filterNew(
-                                        udf,
-                                        x -> x.getFunctionLanguage() == FunctionLanguage.PYTHON)),
+                                CollUtil.filterNew(udf, x -> x.getFunctionLanguage() == FunctionLanguage.PYTHON)),
                         missionId,
                         configuration)
                 .getPyPaths();
@@ -189,17 +181,6 @@ public class UDFUtil {
         return String.join(".", Arrays.asList(packageName, clazz));
     }
 
-    public static void initClassLoader(String name) {
-        ClassEntity classEntity = ClassPool.get(name);
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        CompilerConfiguration config = new CompilerConfiguration();
-        config.setSourceEncoding("UTF-8");
-        GroovyClassLoader groovyClassLoader = new GroovyClassLoader(contextClassLoader, config);
-        groovyClassLoader.setShouldRecompile(true);
-        groovyClassLoader.defineClass(classEntity.getName(), classEntity.getClassByte());
-        Thread.currentThread().setContextClassLoader(groovyClassLoader);
-    }
-
     @Deprecated
     public static Map<String, List<String>> buildJar(List<UDF> codeList) {
         List<String> successList = new ArrayList<>();
@@ -208,48 +189,44 @@ public class UDFUtil {
         String udfJarPath = PathConstant.UDF_JAR_TMP_PATH;
         // 删除jar缓存
         FileUtil.del(udfJarPath);
-        codeList.forEach(
-                udf -> {
-                    if (udf.getFunctionLanguage() == FunctionLanguage.JAVA) {
-                        CustomStringJavaCompiler compiler =
-                                new CustomStringJavaCompiler(udf.getCode());
-                        boolean res = compiler.compilerToTmpPath(tmpPath);
-                        String className = compiler.getFullClassName();
-                        if (res) {
-                            log.info("class编译成功:{}" + className);
-                            log.info("compilerTakeTime：" + compiler.getCompilerTakeTime());
-                            ClassPool.push(ClassEntity.build(className, udf.getCode()));
-                            successList.add(className);
-                        } else {
-                            log.warn("class编译失败:{}" + className);
-                            log.warn(compiler.getCompilerMessage());
-                            failedList.add(className);
-                        }
-                    } else if (udf.getFunctionLanguage() == FunctionLanguage.SCALA) {
-                        String className = udf.getClassName();
-                        if (CustomStringScalaCompiler.getInterpreter(null)
-                                .compileString(udf.getCode())) {
-                            log.info("scala class编译成功:{}" + className);
-                            ClassPool.push(ClassEntity.build(className, udf.getCode()));
-                            successList.add(className);
-                        } else {
-                            log.warn("scala class编译失败:{}" + className);
-                            failedList.add(className);
-                        }
-                    }
-                });
-        String[] clazzs =
-                successList.stream()
-                        .map(className -> StrUtil.replace(className, ".", "/") + ".class")
-                        .toArray(String[]::new);
-        InputStream[] fileInputStreams =
-                successList.stream()
-                        .map(className -> tmpPath + StrUtil.replace(className, ".", "/") + ".class")
-                        .map(FileUtil::getInputStream)
-                        .toArray(InputStream[]::new);
+        codeList.forEach(udf -> {
+            if (udf.getFunctionLanguage() == FunctionLanguage.JAVA) {
+                CustomStringJavaCompiler compiler = new CustomStringJavaCompiler(udf.getCode());
+                boolean res = compiler.compilerToTmpPath(tmpPath);
+                String className = compiler.getFullClassName();
+                if (res) {
+                    log.info("class compile successful:{}", className);
+                    log.info("compilerTakeTime：" + compiler.getCompilerTakeTime());
+                    ClassPool.push(ClassEntity.build(className, udf.getCode()));
+                    successList.add(className);
+                } else {
+                    log.warn("class compile failed:{}", className);
+                    log.warn(compiler.getCompilerMessage());
+                    failedList.add(className);
+                }
+            } else if (udf.getFunctionLanguage() == FunctionLanguage.SCALA) {
+                String className = udf.getClassName();
+                if (CustomStringScalaCompiler.getInterpreter(null).compileString(udf.getCode())) {
+                    log.info("scala class compile successful:{}", className);
+                    ClassPool.push(ClassEntity.build(className, udf.getCode()));
+                    successList.add(className);
+                } else {
+                    log.warn("scala class compile failed:{}", className);
+                    failedList.add(className);
+                }
+            }
+        });
+
+        String[] clazzs = successList.stream()
+                .map(className -> StrUtil.replace(className, ".", "/") + ".class")
+                .toArray(String[]::new);
+        InputStream[] fileInputStreams = successList.stream()
+                .map(className -> tmpPath + StrUtil.replace(className, ".", "/") + ".class")
+                .map(FileUtil::getInputStream)
+                .toArray(InputStream[]::new);
+
         // 编译好的文件打包jar
-        try (ZipWriter zipWriter =
-                new ZipWriter(FileUtil.file(udfJarPath), Charset.defaultCharset())) {
+        try (ZipWriter zipWriter = new ZipWriter(FileUtil.file(udfJarPath), Charset.defaultCharset())) {
             zipWriter.add(clazzs, fileInputStreams);
         }
         String md5 = md5sum(udfJarPath);
@@ -263,29 +240,28 @@ public class UDFUtil {
      * 得到udf版本和构建jar
      *
      * @param codeList 代码列表
-     * @return {@link java.lang.String}
+     * @return {@link String}
      */
     @Deprecated
     public static String getUdfFileAndBuildJar(List<UDF> codeList) {
         // 1. 检查所有jar的版本，通常名字为 udf-${version}.jar;如 udf-1.jar,没有这个目录则跳过
-        String md5 = buildJar(codeList).get("md5").get(0);
-        if (!FileUtil.exist(PathConstant.UDF_PATH)) {
-            FileUtil.mkdir(PathConstant.UDF_PATH);
-        }
+        FileUtil.mkdir(PathConstant.UDF_PATH);
 
         try {
             // 获取所有的udf jar的 md5 值，放入 map 里面
             if (UDF_MD5_MAP.isEmpty()) {
                 scanUDFMD5();
             }
+
             // 2. 如果有匹配的，返回对应udf 版本，没有则构建jar，对应信息写入 jar
+            String md5 = buildJar(codeList).get("md5").get(0);
             if (UDF_MD5_MAP.containsKey(md5)) {
                 FileUtil.del(PathConstant.UDF_JAR_TMP_PATH);
                 return StrUtil.format("udf-{}.jar", UDF_MD5_MAP.get(md5));
             }
+
             // 3. 生成新版本jar
-            Integer newVersion =
-                    UDF_MD5_MAP.values().size() > 0 ? CollUtil.max(UDF_MD5_MAP.values()) + 1 : 1;
+            Integer newVersion = UDF_MD5_MAP.values().size() > 0 ? CollUtil.max(UDF_MD5_MAP.values()) + 1 : 1;
             String jarName = StrUtil.format("udf-{}.jar", newVersion);
             String newName = PathConstant.UDF_PATH + jarName;
             FileUtil.rename(FileUtil.file(PathConstant.UDF_JAR_TMP_PATH), newName, true);
@@ -297,21 +273,19 @@ public class UDFUtil {
         }
     }
 
-    /** 扫描udf包文件，写入md5到 UDF_MD5_MAP */
+    /**
+     * 扫描udf包文件，写入md5到 UDF_MD5_MAP
+     */
     @Deprecated
     private static void scanUDFMD5() {
         List<String> fileList = FileUtil.listFileNames(PathConstant.UDF_PATH);
         fileList.stream()
                 .filter(fileName -> ReUtil.isMatch(PathConstant.UDF_JAR_RULE, fileName))
                 .distinct()
-                .forEach(
-                        fileName -> {
-                            Integer version =
-                                    Convert.toInt(
-                                            ReUtil.getGroup0(
-                                                    PathConstant.UDF_VERSION_RULE, fileName));
-                            UDF_MD5_MAP.put(md5sum(PathConstant.UDF_PATH + fileName), version);
-                        });
+                .forEach(fileName -> {
+                    Integer version = Convert.toInt(ReUtil.getGroup0(PathConstant.UDF_VERSION_RULE, fileName));
+                    UDF_MD5_MAP.put(md5sum(PathConstant.UDF_PATH + fileName), version);
+                });
     }
 
     private static String md5sum(String filePath) {
@@ -319,27 +293,30 @@ public class UDFUtil {
     }
 
     public static boolean isUdfStatement(Pattern pattern, String statement) {
-        return !StrUtil.isBlank(statement)
-                && CollUtil.isNotEmpty(ReUtil.findAll(pattern, statement, 0));
+        return !StrUtil.isBlank(statement) && CollUtil.isNotEmpty(ReUtil.findAll(pattern, statement, 0));
     }
 
     public static UDF toUDF(String statement) {
-        Pattern pattern = Pattern.compile(FUNCTION_SQL_REGEX, Pattern.CASE_INSENSITIVE);
-        if (isUdfStatement(pattern, statement)) {
-            List<String> groups = CollUtil.removeEmpty(ReUtil.getAllGroups(pattern, statement));
+        if (isUdfStatement(PATTERN, statement)) {
+            List<String> groups = CollUtil.removeEmpty(ReUtil.getAllGroups(PATTERN, statement));
             String udfName = groups.get(1);
             String className = groups.get(2);
+
+            if (groups.size() > 3) {
+                // if statement contains using jar, using these jars, not to lookup ClassLoaderUtil
+                // pool
+                return null;
+            }
+
             if (ClassLoaderUtil.isPresent(className)) {
                 // 获取已经加载在java的类，对应的包路径
                 try {
-                    JarPathContextHolder.addUdfPath(
-                            FileUtil.file(
-                                    DinkyClassLoaderContextHolder.get()
-                                            .loadClass(className)
-                                            .getProtectionDomain()
-                                            .getCodeSource()
-                                            .getLocation()
-                                            .getPath()));
+                    FlinkUdfPathContextHolder.addUdfPath(FileUtil.file(DinkyClassLoaderContextHolder.get()
+                            .loadClass(className)
+                            .getProtectionDomain()
+                            .getCodeSource()
+                            .getLocation()
+                            .getPath()));
                 } catch (ClassNotFoundException e) {
                     throw new DinkyException(e);
                 }
@@ -347,13 +324,101 @@ public class UDFUtil {
             }
 
             UDF udf = UdfCodePool.getUDF(className);
-            return UDF.builder()
-                    .name(udfName)
-                    .className(className)
-                    .code(udf.getCode())
-                    .functionLanguage(udf.getFunctionLanguage())
-                    .build();
+            if (udf != null) {
+                return UDF.builder()
+                        .name(udfName)
+                        .className(className)
+                        .code(udf.getCode())
+                        .functionLanguage(udf.getFunctionLanguage())
+                        .build();
+            }
+            String gitPackage = UdfCodePool.getGitPackage(className);
+
+            if (StrUtil.isNotBlank(gitPackage) && FileUtil.exist(gitPackage)) {
+                if (FileUtil.getSuffix(gitPackage).equals("jar")) {
+                    FlinkUdfPathContextHolder.addUdfPath(new File(gitPackage));
+                } else {
+                    FlinkUdfPathContextHolder.addPyUdfPath(new File(gitPackage));
+                }
+            }
         }
         return null;
+    }
+
+    public static List<Class<?>> getUdfClassByJar(File jarPath) {
+        Assert.notNull(jarPath);
+
+        List<Class<?>> classList = new ArrayList<>();
+        try (JarClassLoader loader = new JarClassLoader()) {
+            loader.addJar(jarPath);
+
+            ClassScanner classScanner =
+                    new ClassScanner("", aClass -> ClassUtil.isAssignable(UserDefinedFunction.class, aClass));
+            classScanner.setClassLoader(loader);
+            ReflectUtil.invoke(classScanner, "scanJar", new JarFile(jarPath));
+            Set<Class<? extends UserDefinedFunction>> classes =
+                    (Set<Class<? extends UserDefinedFunction>>) ReflectUtil.getFieldValue(classScanner, "classes");
+            for (Class<? extends UserDefinedFunction> aClass : classes) {
+                try {
+                    UserDefinedFunctionHelper.validateClass(aClass);
+                    classList.add(aClass);
+                } catch (Exception ex) {
+                    throw new DinkyException();
+                }
+            }
+        } catch (ValidationException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return classList;
+    }
+
+    public static List<String> getPythonUdfList(String udfFile) {
+        return getPythonUdfList(SystemConfiguration.getInstances().getPythonHome(), udfFile);
+    }
+
+    private static final String PYTHON_FUNC_FILE_MD5 =
+            MD5.create().digestHex(ResourceUtil.readUtf8Str("getPyFuncList.py"));
+
+    public static List<String> getPythonUdfList(String pythonPath, String udfFile) {
+        File checkFile = new File(PathConstant.TMP_PATH, "getPyFuncList.py");
+        if (!checkFile.exists() || !MD5.create().digestHex(checkFile).equals(PYTHON_FUNC_FILE_MD5)) {
+            FileUtil.writeUtf8String(ResourceUtil.readUtf8Str("getPyFuncList.py"), checkFile);
+        }
+        List<String> udfNameList = execPyAndGetUdfNameList(pythonPath, checkFile.getAbsolutePath(), udfFile);
+
+        List<String> successUdfList = new ArrayList<>();
+        if (CollUtil.isEmpty(udfNameList)) {
+            return new ArrayList<>();
+        }
+        for (String udfName : udfNameList) {
+            if (StrUtil.isBlank(udfName)) {
+                continue;
+            }
+            Configuration configuration = new Configuration();
+            configuration.set(PythonOptions.PYTHON_FILES, udfFile);
+            configuration.set(PythonOptions.PYTHON_CLIENT_EXECUTABLE, pythonPath);
+            configuration.set(PythonOptions.PYTHON_EXECUTABLE, pythonPath);
+            try {
+                PythonFunctionFactory.getPythonFunction(udfName, configuration, null);
+                successUdfList.add(udfName);
+            } catch (Exception e) {
+                log.error("", e);
+            }
+        }
+        return successUdfList;
+    }
+
+    private static List<String> execPyAndGetUdfNameList(String pyPath, String pyFile, String checkPyFile) {
+        try {
+            // 运行Python3脚本的命令，换成自己的即可
+            String shell =
+                    StrUtil.join(" ", Arrays.asList(Opt.ofBlankAble(pyPath).orElse("python3"), pyFile, checkPyFile));
+
+            return StrUtil.split(StrUtil.trim(RuntimeUtil.execForStr(shell)), ",");
+        } catch (Exception e) {
+            throw new DinkyException(e);
+        }
     }
 }

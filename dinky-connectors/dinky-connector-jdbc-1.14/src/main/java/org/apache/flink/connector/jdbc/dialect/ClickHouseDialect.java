@@ -31,7 +31,6 @@ import java.util.Optional;
 /**
  * JDBC dialect for ClickHouse.
  *
- * @author wenmo
  * @since 2021/9/19 20:32
  */
 public class ClickHouseDialect extends AbstractDialect {
@@ -70,8 +69,7 @@ public class ClickHouseDialect extends AbstractDialect {
     }
 
     @Override
-    public Optional<String> getUpsertStatement(
-            String tableName, String[] fieldNames, String[] uniqueKeyFields) {
+    public Optional<String> getUpsertStatement(String tableName, String[] fieldNames, String[] uniqueKeyFields) {
         return Optional.of(getInsertIntoStatement(tableName, fieldNames));
     }
 

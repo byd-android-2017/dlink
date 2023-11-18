@@ -32,13 +32,14 @@ const Settings: ProLayoutProps & {
   fixedHeader: false,
   fixSiderbar: true,
   colorWeak: false,
+  // 这里不能删除,需要先设置,否则会导致页面白屏, 然后在 layout 进行重新赋值
   title: 'Dinky Real-time Platform ',
   pwa: true,
   logo: '/dinky.svg',
   iconfontUrl: '',
   splitMenus: true,
   menu: {
-    locale: true,
+    locale: true
   },
   token: {
     // bgLayout: '', //layout 的背景颜色
@@ -53,16 +54,16 @@ const Settings: ProLayoutProps & {
       colorTextMenuSelected: '#fff',
       colorBgMenuItemSelected: '#1e252a',
       colorTextMenuActive: 'rgba(255,255,255,0.85)',
-      colorTextRightActionsItem: '#dfdfdf',
+      colorTextRightActionsItem: '#dfdfdf'
     },
     sider: {
-      colorBgMenuItemSelected: '#3399FF',
+      colorBgMenuItemSelected: '#3399FF'
     },
     pageContainer: {
       paddingBlockPageContainerContent: 5,
-      paddingInlinePageContainerContent: 10,
+      paddingInlinePageContainerContent: 10
     }
-  },
+  }
 };
 
 export default Settings;

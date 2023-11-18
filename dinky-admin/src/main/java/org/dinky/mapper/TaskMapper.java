@@ -19,8 +19,10 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.Task;
+import org.dinky.data.model.Task;
+import org.dinky.data.model.home.JobModelOverview;
+import org.dinky.data.model.home.JobTypeOverView;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -32,7 +34,6 @@ import com.baomidou.mybatisplus.annotation.InterceptorIgnore;
 /**
  * 作业 Mapper 接口
  *
- * @author wenmo
  * @since 2021-05-28
  */
 @Mapper
@@ -51,4 +52,8 @@ public interface TaskMapper extends SuperMapper<Task> {
 
     @InterceptorIgnore(tenantLine = "true")
     Integer getTenantByTaskId(@Param("id") Integer id);
+
+    List<JobTypeOverView> getTaskOnlineRate();
+
+    JobModelOverview getJobStreamingOrBatchModelOverview();
 }

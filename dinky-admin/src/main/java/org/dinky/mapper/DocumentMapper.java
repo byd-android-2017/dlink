@@ -19,15 +19,14 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.Document;
+import org.dinky.data.model.Document;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * DocumentMapper
  *
- * @author wenmo
  * @since 2021/6/3 14:31
  */
 @Mapper

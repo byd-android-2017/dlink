@@ -19,15 +19,14 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.DataBase;
+import org.dinky.data.model.DataBase;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * DataBaseMapper
  *
- * @author wenmo
  * @since 2021/7/20 23:43
  */
 @Mapper

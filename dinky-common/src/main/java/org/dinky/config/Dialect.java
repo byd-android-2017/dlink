@@ -24,7 +24,6 @@ import org.dinky.assertion.Asserts;
 /**
  * Dialect
  *
- * @author wenmo
  * @since 2021/12/13
  */
 public enum Dialect {
@@ -78,7 +77,7 @@ public enum Dialect {
      * @param value {@link Dialect}
      * @return If is flink sql, return false, otherwise return true.
      */
-    public static boolean notFlinkSql(String value) {
+    public static boolean isCommonSql(String value) {
         Dialect dialect = Dialect.get(value);
         switch (dialect) {
             case SQL:
@@ -104,6 +103,17 @@ public enum Dialect {
             case JAVA:
             case SCALA:
             case PYTHON:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static boolean isJarDialect(String value) {
+        Dialect dialect = Dialect.get(value);
+        switch (dialect) {
+            case FLINK_JAR:
+            case KUBERNETES_APPLICATION:
                 return true;
             default:
                 return false;

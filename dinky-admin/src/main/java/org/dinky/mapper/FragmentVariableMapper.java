@@ -19,15 +19,14 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.FragmentVariable;
+import org.dinky.data.model.FragmentVariable;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * FragmentVariableMapper
  *
- * @author zhumingye
  * @since 2022/08/18
  */
 @Mapper

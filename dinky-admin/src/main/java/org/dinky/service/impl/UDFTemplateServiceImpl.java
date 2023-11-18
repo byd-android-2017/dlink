@@ -20,20 +20,17 @@
 package org.dinky.service.impl;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.db.service.impl.SuperServiceImpl;
-import org.dinky.exception.BusException;
+import org.dinky.data.exception.BusException;
+import org.dinky.data.model.udf.UDFTemplate;
 import org.dinky.mapper.UDFTemplateMapper;
-import org.dinky.model.UDFTemplate;
+import org.dinky.mybatis.service.impl.SuperServiceImpl;
 import org.dinky.service.UDFTemplateService;
 
 import org.springframework.stereotype.Service;
 
 import cn.hutool.core.util.StrUtil;
 
-/**
- * @author ZackYoung
- * @since 0.6.8
- */
+/** @since 0.6.8 */
 @Service
 public class UDFTemplateServiceImpl extends SuperServiceImpl<UDFTemplateMapper, UDFTemplate>
         implements UDFTemplateService {
@@ -44,14 +41,25 @@ public class UDFTemplateServiceImpl extends SuperServiceImpl<UDFTemplateMapper, 
         udfTemplate.setCodeType(StrUtil.upperFirst(udfTemplate.getCodeType().toLowerCase()));
         if (Asserts.isNull(udfTemplate.getId())) {
             if ((selectOne != null)) {
-                throw new BusException("模板名已经存在");
+                throw new BusException("the template name already exists");
             }
             return save(udfTemplate);
         } else {
             if (Asserts.isNotNull(selectOne) && !udfTemplate.getId().equals(selectOne.getId())) {
-                throw new BusException("模板名已经存在");
+                throw new BusException("the template name already exists");
             }
             return updateById(udfTemplate);
         }
+    }
+
+    /**
+     * @param id {@link Integer}
+     * @return {@link Boolean}
+     */
+    @Override
+    public Boolean modifyUDFTemplateStatus(Integer id) {
+        UDFTemplate udfTemplate = getById(id);
+        udfTemplate.setEnabled(!udfTemplate.getEnabled());
+        return updateById(udfTemplate);
     }
 }

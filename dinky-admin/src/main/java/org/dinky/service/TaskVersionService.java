@@ -19,20 +19,26 @@
 
 package org.dinky.service;
 
-import org.dinky.db.service.ISuperService;
-import org.dinky.model.TaskVersion;
+import org.dinky.data.dto.TaskDTO;
+import org.dinky.data.model.TaskVersion;
+import org.dinky.mybatis.service.ISuperService;
 
 import java.util.List;
 
-/** @author huang */
 public interface TaskVersionService extends ISuperService<TaskVersion> {
 
     /**
      * @description 通过作业Id查询版本数据
      * @param taskId
-     * @return java.util.List<org.dinky.model.TaskVersion>
-     * @author huang
-     * @date 2022/6/22 17:17
+     * @return java.util.List<org.dinky.data.model.TaskVersion>
      */
     List<TaskVersion> getTaskVersionByTaskId(Integer taskId);
+
+    /**
+     * Create a snapshot of a task version.
+     *
+     * @param task A {@link TaskDTO} object representing the task to create a snapshot for.
+     * @return
+     */
+    Integer createTaskVersionSnapshot(TaskDTO task);
 }

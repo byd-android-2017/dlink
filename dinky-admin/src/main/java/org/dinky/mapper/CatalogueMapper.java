@@ -19,15 +19,14 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.Catalogue;
+import org.dinky.data.model.Catalogue;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * CatalogueMapper
  *
- * @author wenmo
  * @since 2021/5/28 13:53
  */
 @Mapper

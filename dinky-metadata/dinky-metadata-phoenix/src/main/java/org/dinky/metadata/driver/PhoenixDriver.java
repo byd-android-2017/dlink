@@ -19,15 +19,15 @@
 
 package org.dinky.metadata.driver;
 
+import org.dinky.data.model.Column;
+import org.dinky.data.model.QueryData;
+import org.dinky.data.model.Table;
 import org.dinky.metadata.constant.PhoenixConstant;
 import org.dinky.metadata.convert.ITypeConvert;
 import org.dinky.metadata.convert.PhoenixTypeConvert;
 import org.dinky.metadata.query.IDBQuery;
 import org.dinky.metadata.query.PhoenixQuery;
 import org.dinky.metadata.result.JdbcSelectResult;
-import org.dinky.model.Column;
-import org.dinky.model.QueryData;
-import org.dinky.model.Table;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -66,12 +66,11 @@ public class PhoenixDriver extends AbstractJdbcDriver {
         String where = queryData.getOption().getWhere();
         String order = queryData.getOption().getOrder();
 
-        StringBuilder optionBuilder =
-                new StringBuilder()
-                        .append("select * from ")
-                        .append(queryData.getSchemaName())
-                        .append(".")
-                        .append(queryData.getTableName());
+        StringBuilder optionBuilder = new StringBuilder()
+                .append("select * from ")
+                .append(queryData.getSchemaName())
+                .append(".")
+                .append(queryData.getTableName());
 
         if (where != null && !where.equals("")) {
             optionBuilder.append(" where ").append(where);
@@ -97,13 +96,12 @@ public class PhoenixDriver extends AbstractJdbcDriver {
         PhoenixTypeConvert phoenixTypeConvert = new PhoenixTypeConvert();
         if (columns != null) {
             for (Column column : columns) {
-                sql.append(
-                        ", \""
-                                + column.getColumnFamily()
-                                + "\".\""
-                                + column.getName()
-                                + "\"  "
-                                + phoenixTypeConvert.convertToDB(column));
+                sql.append(", \""
+                        + column.getColumnFamily()
+                        + "\".\""
+                        + column.getName()
+                        + "\"  "
+                        + phoenixTypeConvert.convertToDB(column));
             }
         }
         sql.append(" ) ");

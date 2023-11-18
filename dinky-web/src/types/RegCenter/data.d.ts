@@ -1,19 +1,23 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
  */
+
+import { BaseBeanColumns } from '@/types/Public/data';
 
 /**
  * about alert
@@ -22,29 +26,40 @@ declare namespace Alert {
   /**
    * alert group
    */
-  export type AlertGroup = {
-    id: number,
-    name: string,
-    alertInstanceIds: string,
-    note: string,
-    enabled: boolean,
-    createTime: Date,
-    updateTime: Date,
+  export type AlertGroup = BaseBeanColumns & {
+    alertInstanceIds: string;
+    note: string;
   };
 
   /**
    * alert instance
    */
-  export type AlertInstance = {
-    id: number,
-    name: string,
-    type: string,
-    params: string,
-    enabled: boolean,
-    createTime: Date,
-    updateTime: Date,
+  export type AlertInstance = BaseBeanColumns & {
+    type: string;
+    params: string;
+  };
+
+  /**
+   * alert template
+   */
+  export type AlertTemplate = BaseBeanColumns & {
+    id: number;
+    templateContent: string;
   };
 }
+
+export type AlertConfig = {
+  type: string;
+};
+
+export const ALERT_TYPE = {
+  DINGTALK: 'DingTalk',
+  WECHAT: 'WeChat',
+  FEISHU: 'FeiShu',
+  EMAIL: 'Email',
+  SMS: 'Sms',
+  GROUP: 'Group'
+};
 
 /**
  * about flink cluster
@@ -54,137 +69,206 @@ declare namespace Cluster {
    * flink cluster instance
    * mainly used for `yarn session` `standalone`
    */
-  export type ClusterInstance = {
-    id: number,
-    name: string,
-    alias: string,
-    type: string,
-    hosts: string,
-    jobManagerHost: string,
-    autoRegisters: boolean,
-    version: string,
-    status: number,
-    note: string,
-    enabled: boolean,
-    createTime: Date,
-    updateTime: Date,
+  export type Instance = BaseBeanColumns & {
+    alias: string;
+    type: string;
+    hosts: string;
+    jobManagerHost: string;
+    autoRegisters: boolean;
+    version: string;
+    status: number;
+    note: string;
   };
 
   /**
    * flink cluster config
    * mainly used for `projob` `application` `k8s` and start a new session cluster
    */
-  export type ClusterConfig = {
-    id: number,
-    name: string,
-    type: string,
-    config: any,
-    configJson: string,
-    isAvailable: boolean,
-    note: string,
-    enabled: boolean,
-    createTime: Date,
-    updateTime: Date,
+  export type Config = BaseBeanColumns & {
+    type: string;
+    config?: any;
+    isAvailable?: boolean;
+    note: string;
   };
 }
 
 /**
  * about database and metadata
  */
-declare namespace DataBases {
-
+declare namespace DataSources {
   /**
    * database info
    */
-  export type DataBase = {
-    id: number,
-    name: string,
-    groupName: string,
-    type: string,
-    url: string,
-    username: string,
-    password: string,
-    note: string,
-    flinkConfig: string,
-    flinkTemplate: string,
-    dbVersion: string,
-    status: boolean,
-    healthTime: Date,
-    heartbeatTime: Date,
-    enabled: boolean,
-    createTime: Date,
-    updateTime: Date,
+  export type DataSource = BaseBeanColumns & {
+    groupName: string;
+    type: string;
+    url: string;
+    username: string;
+    password: string;
+    note: string;
+    flinkConfig: string;
+    flinkTemplate: string;
+    dbVersion: string;
+    status: boolean;
+    healthTime: Date;
+    heartbeatTime: Date;
   };
-
 
   /**
    * table info
    */
   export type Table = {
-    name: string,
-    schema: string,
-    catalog: string,
-    comment: string,
-    type: string,
-    engine: string,
-    options: string,
-    rows: number,
-    createTime: string,
-    updateTime: string,
+    name: string;
+    schema: string;
+    catalog: string;
+    comment: string;
+    type: string;
+    engine: string;
+    options: string;
+    rows: number;
+    createTime: string;
+    updateTime: string;
   };
 
   /**
    * table columns info
    */
   export type Column = {
-    name: string,
-    type: string,
-    comment: string,
-    keyFlag: boolean,
-    autoIncrement: boolean,
-    defaultValue: string,
-    nullable: string,
-    javaType: string,
-    columnFamily: string,
-    position: number,
-    precision: number,
-    scale: number,
-    characterSet: string,
-    collation: string,
+    name: string;
+    type: string;
+    comment: string;
+    keyFlag: boolean;
+    autoIncrement: boolean;
+    defaultValue: string;
+    nullable: string;
+    javaType: string;
+    columnFamily: string;
+    position: number;
+    precision: number;
+    scale: number;
+    characterSet: string;
+    collation: string;
   };
 
+  /**
+   * table columns info
+   */
+  export type SqlGeneration = {
+    flinkSqlCreate: string;
+    sqlSelect: string;
+    sqlCreate: string;
+  };
 }
-
 
 /**
  * about document
  */
-export type Document = {
-  id: number,
-  name: string,
-  category: string,
-  type: string,
-  subtype: string,
-  description: string,
-  fillValue: string,
-  version: string,
-  likeNum: number,
-  enabled: boolean,
-  createTime: Date,
-  updateTime: Date,
+export type Document = BaseBeanColumns & {
+  category: string;
+  type: string;
+  subtype: string;
+  description: string;
+  fillValue: string;
+  version: string;
+  likeNum: number;
 };
-
 
 /**
  * global variable
  */
-export type GlobalVar = {
-  id: number,
-  name: string,
-  fragmentValue: string,
-  note: string,
-  enabled: boolean,
-  createTime: Date,
-  updateTime: Date,
+export type GlobalVar = BaseBeanColumns & {
+  fragmentValue: string;
+  note: string;
 };
 
+export type BuildJarList = {
+  jarPath: string;
+  orderLine: number;
+  classList: string[];
+};
+
+/**
+ * git project
+ */
+export type GitProject = BaseBeanColumns & {
+  url: string;
+  branch: string;
+  username: string;
+  password: string;
+  privateKey: string;
+  pom: string;
+  buildArgs: string;
+  codeType: number;
+  type: number;
+  lastBuild: Date;
+  description: string;
+  buildState: number;
+  buildStep: number;
+  udfClassMapList: string;
+  orderLine: number;
+};
+
+export type GitProjectTreeNode = {
+  name: string;
+  path: string;
+  content: string;
+  size: number;
+  leaf: boolean;
+  children: GitProjectTreeNode[];
+};
+
+export type UDFTemplate = BaseBeanColumns & {
+  codeType: string;
+  functionType: string;
+  templateCode: string;
+};
+
+export interface UDFRegisterInfo {
+  id: number;
+  resourcesId: number;
+  name: string;
+  className: string;
+  enable: boolean;
+  dialect: string;
+  source: string;
+  fileName: string;
+  // tenantId: number;
+  // createTime: string;
+  updateTime: Date;
+}
+export interface UDFRegisterInfoParent {
+  num: number;
+  resourcesId: number;
+  dialect: string;
+  source: string;
+  fileName: string;
+}
+export interface UDFRegisterInfoChild {
+  id: number;
+  resourcesId: number;
+  name: string;
+  className: string;
+  enable: boolean;
+  dialect: string;
+  source: string;
+  fileName: string;
+  // tenantId: number;
+  // createTime: string;
+  updateTime: Date;
+}
+
+export interface ResourceInfo {
+  id: number;
+  fileName: string;
+  description: string;
+  userId: number;
+  type: number;
+  size: number;
+  pid: number;
+  fullName: string;
+  isDirectory: boolean;
+  createTime: string;
+  updateTime: string;
+  children: ResourceInfo[];
+  leaf: boolean;
+}

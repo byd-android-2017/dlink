@@ -20,9 +20,9 @@
 package org.dinky.service.impl;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.db.service.impl.SuperServiceImpl;
+import org.dinky.data.model.Document;
 import org.dinky.mapper.DocumentMapper;
-import org.dinky.model.Document;
+import org.dinky.mybatis.service.impl.SuperServiceImpl;
 import org.dinky.service.DocumentService;
 
 import java.util.List;
@@ -33,8 +33,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 /** DocumentServiceImpl */
 @Service
-public class DocumentServiceImpl extends SuperServiceImpl<DocumentMapper, Document>
-        implements DocumentService {
+public class DocumentServiceImpl extends SuperServiceImpl<DocumentMapper, Document> implements DocumentService {
 
     @Override
     public List<Document> getFillAllByVersion(String version) {
@@ -47,7 +46,7 @@ public class DocumentServiceImpl extends SuperServiceImpl<DocumentMapper, Docume
     }
 
     @Override
-    public Boolean enable(Integer id) {
+    public Boolean modifyDocumentStatus(Integer id) {
         Document document = baseMapper.selectById(id);
         document.setEnabled(!document.getEnabled());
         return updateById(document);

@@ -19,47 +19,35 @@
 
 package org.dinky.service.impl;
 
-import static org.dinky.gateway.config.GatewayConfig.FLINK_VERSION;
-
-import org.dinky.config.Docker;
-import org.dinky.db.service.impl.SuperServiceImpl;
-import org.dinky.gateway.GatewayType;
-import org.dinky.gateway.config.ClusterConfig;
-import org.dinky.gateway.config.FlinkConfig;
+import org.dinky.data.dto.ClusterConfigurationDTO;
+import org.dinky.data.model.ClusterConfiguration;
 import org.dinky.gateway.config.GatewayConfig;
+import org.dinky.gateway.enums.GatewayType;
+import org.dinky.gateway.model.FlinkClusterConfig;
 import org.dinky.gateway.result.TestResult;
 import org.dinky.job.JobManager;
 import org.dinky.mapper.ClusterConfigurationMapper;
-import org.dinky.model.ClusterConfiguration;
-import org.dinky.model.FlinkClusterConfiguration;
-import org.dinky.model.FlinkClusterConfiguration.Type;
+import org.dinky.mybatis.service.impl.SuperServiceImpl;
 import org.dinky.service.ClusterConfigurationService;
-import org.dinky.utils.DockerClientUtils;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.lang.Opt;
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.lang.Assert;
 
 /**
  * ClusterConfigServiceImpl
  *
- * @author wenmo
  * @since 2021/11/6 20:54
  */
 @Service
-public class ClusterConfigurationServiceImpl
-        extends SuperServiceImpl<ClusterConfigurationMapper, ClusterConfiguration>
+public class ClusterConfigurationServiceImpl extends SuperServiceImpl<ClusterConfigurationMapper, ClusterConfiguration>
         implements ClusterConfigurationService {
 
     @Value("classpath:DinkyFlinkDockerfile")
@@ -67,79 +55,51 @@ public class ClusterConfigurationServiceImpl
 
     @Override
     public ClusterConfiguration getClusterConfigById(Integer id) {
-        ClusterConfiguration clusterConfiguration = baseMapper.selectById(id);
-        clusterConfiguration.parseConfig();
-        return clusterConfiguration;
+        return baseMapper.selectById(id);
     }
 
     @Override
-    public List<ClusterConfiguration> listEnabledAll() {
+    public List<ClusterConfiguration> listEnabledAllClusterConfig() {
         return this.list(new QueryWrapper<ClusterConfiguration>().eq("enabled", 1));
     }
 
     @Override
-    public Map<String, Object> getGatewayConfig(Integer id) {
-        ClusterConfiguration clusterConfiguration = this.getClusterConfigById(id);
-        return clusterConfiguration.getConfig();
+    public FlinkClusterConfig getFlinkClusterCfg(Integer id) {
+        ClusterConfiguration cfg = this.getClusterConfigById(id);
+        Assert.notNull(cfg, "The clusterConfiguration not exists!");
+        return FlinkClusterConfig.create(cfg.getType(), cfg.getConfigJson());
     }
 
     @Override
-    public TestResult testGateway(ClusterConfiguration clusterConfiguration) {
-        FlinkClusterConfiguration config = clusterConfiguration.parse();
-        GatewayConfig gatewayConfig = new GatewayConfig();
+    public TestResult testGateway(ClusterConfigurationDTO config) {
+        config.getConfig().setType(GatewayType.get(config.getType()));
+        return JobManager.testGateway(GatewayConfig.build(config.getConfig()));
+    }
 
-        Opt.ofBlankAble(config.getHadoopConfigPath())
-                .ifPresentOrElse(
-                        hadoopConfigPath ->
-                                gatewayConfig.setClusterConfig(
-                                        ClusterConfig.build(
-                                                config.getFlinkConfigPath(),
-                                                config.getFlinkLibPath(),
-                                                hadoopConfigPath)),
-                        () ->
-                                gatewayConfig.setClusterConfig(
-                                        ClusterConfig.build(config.getFlinkConfigPath())));
-
-        FlinkConfig flinkConfig =
-                CollUtil.isEmpty(config.getFlinkConfig())
-                        ? FlinkConfig.build(new HashMap<>(8))
-                        : FlinkConfig.build(config.getFlinkConfig());
-        Map<String, String> flinkConfigMap = flinkConfig.getConfiguration();
-        gatewayConfig.setFlinkConfig(flinkConfig);
-
-        if (config.getType() == FlinkClusterConfiguration.Type.Yarn) {
-            gatewayConfig.setType(GatewayType.YARN_APPLICATION);
-        } else if (config.getType() == FlinkClusterConfiguration.Type.Kubernetes) {
-            gatewayConfig.setType(GatewayType.KUBERNETES_APPLICATION);
-
-            Map<String, String> kubernetesConfig = config.getKubernetesConfig();
-
-            // filter str blank value
-            kubernetesConfig =
-                    MapUtil.filter(kubernetesConfig, entry -> !StrUtil.isBlank(entry.getValue()));
-
-            // set default value
-            kubernetesConfig.putIfAbsent("kubernetes.cluster-id", UUID.randomUUID().toString());
-
-            flinkConfigMap.putAll(kubernetesConfig);
-
-            try {
-                Docker docker =
-                        Docker.build(
-                                (Map<String, Object>)
-                                        clusterConfiguration.getConfig().get("dockerConfig"));
-                if (docker != null && clusterConfiguration.getId() != null) {
-                    new DockerClientUtils(docker).initImage();
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if (config.getType() == Type.KubernetesOperator) {
-            gatewayConfig.setType(GatewayType.KUBERNETES_APPLICATION_OPERATOR);
-            config.getKubernetesConfig().put(FLINK_VERSION, config.getFlinkVersion());
-            flinkConfig.setFlinkKubetnetsConfig(config.getKubernetesConfig());
+    /**
+     * @param id
+     * @return
+     */
+    @Override
+    public Boolean modifyClusterConfigStatus(Integer id) {
+        ClusterConfiguration clusterConfiguration = this.getById(id);
+        if (clusterConfiguration != null) {
+            clusterConfiguration.setEnabled(!clusterConfiguration.getEnabled());
+            return this.updateById(clusterConfiguration);
         }
+        return false;
+    }
 
-        return JobManager.testGateway(gatewayConfig);
+    /**
+     * @param keyword
+     * @return
+     */
+    @Override
+    public List<ClusterConfigurationDTO> selectListByKeyWord(String keyword) {
+        return getBaseMapper()
+                .selectList(new LambdaQueryWrapper<ClusterConfiguration>().like(ClusterConfiguration::getName, keyword))
+                .stream()
+                .map(ClusterConfigurationDTO::fromBean)
+                .collect(Collectors.toList());
     }
 }

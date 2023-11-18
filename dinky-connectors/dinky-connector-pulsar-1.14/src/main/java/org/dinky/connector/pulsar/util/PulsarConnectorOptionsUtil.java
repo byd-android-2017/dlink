@@ -24,11 +24,7 @@ import org.apache.flink.annotation.PublicEvolving;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * @author DarrenDa
- * * @version 1.0
- * * @Desc:
- **/
+/** * @version 1.0 * @Desc: */
 
 /** Utilities for {@link PulsarConnectorOptions}. */
 @PublicEvolving
@@ -42,14 +38,11 @@ public class PulsarConnectorOptionsUtil {
         final Properties pulsarProperties = new Properties();
 
         if (hasPulsarClientProperties(tableOptions)) {
-            tableOptions.keySet().stream()
-                    .filter(key -> key.startsWith(prefix))
-                    .forEach(
-                            key -> {
-                                final String value = tableOptions.get(key);
-                                final String subKey = key.substring((prefix).length());
-                                pulsarProperties.put(subKey, value);
-                            });
+            tableOptions.keySet().stream().filter(key -> key.startsWith(prefix)).forEach(key -> {
+                final String value = tableOptions.get(key);
+                final String subKey = key.substring((prefix).length());
+                pulsarProperties.put(subKey, value);
+            });
         }
         return pulsarProperties;
     }
@@ -62,6 +55,5 @@ public class PulsarConnectorOptionsUtil {
         return tableOptions.keySet().stream().anyMatch(k -> k.startsWith(PROPERTIES_PREFIX));
     }
 
-    private PulsarConnectorOptionsUtil() {
-    }
+    private PulsarConnectorOptionsUtil() {}
 }

@@ -20,25 +20,46 @@
 package org.dinky.service;
 
 import org.dinky.alert.AlertResult;
-import org.dinky.common.result.Result;
-import org.dinky.db.service.ISuperService;
-import org.dinky.model.AlertInstance;
+import org.dinky.data.dto.AlertInstanceDTO;
+import org.dinky.data.model.alert.AlertInstance;
+import org.dinky.data.result.Result;
+import org.dinky.mybatis.service.ISuperService;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
-/**
- * AlertInstanceService
- *
- * @author wenmo
- * @since 2022/2/24 19:52
- */
+/** AlertInstanceService */
 public interface AlertInstanceService extends ISuperService<AlertInstance> {
 
+    /**
+     * list all enabled alert instance
+     *
+     * @return {@link List<AlertInstance>}
+     */
     List<AlertInstance> listEnabledAll();
 
-    AlertResult testAlert(AlertInstance alertInstance);
+    /**
+     * test one alert instance
+     *
+     * @param alertInstanceDTO {@link AlertInstanceDTO}
+     * @return {@link AlertResult}
+     */
+    AlertResult testAlert(AlertInstanceDTO alertInstanceDTO);
 
-    Result<Void> deleteAlertInstance(JsonNode para);
+    /**
+     * delete alert instance
+     *
+     * @param id {@link Integer}
+     * @return {@link Result<Void>}
+     */
+    Boolean deleteAlertInstance(Integer id);
+
+    /**
+     * enable or disable alert instance
+     *
+     * @param id {@link Integer}
+     * @return {@link Boolean}
+     */
+    Boolean modifyAlertInstanceStatus(Integer id);
+
+    List<AlertInstance> selectListByKeyWord(String keyword);
 }

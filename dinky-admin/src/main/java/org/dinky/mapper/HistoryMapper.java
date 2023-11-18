@@ -19,15 +19,14 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.History;
+import org.dinky.data.model.job.History;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * HistoryMapper
  *
- * @author wenmo
  * @since 2021/6/26 23:00
  */
 @Mapper

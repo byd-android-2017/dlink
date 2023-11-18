@@ -1,0 +1,137 @@
+/*
+ *
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+import FadeIn from '@/components/Animation/FadeIn';
+import { getData } from '@/services/api';
+import { API_CONSTANTS } from '@/services/endpoints';
+import { l } from '@/utils/intl';
+import { LockOutlined, UserOutlined } from '@ant-design/icons';
+import { ProForm, ProFormCheckbox, ProFormText } from '@ant-design/pro-components';
+import { SubmitterProps } from '@ant-design/pro-form/es/components';
+import { Col, Row } from 'antd';
+import React, { useEffect, useState } from 'react';
+import style from '../../../../global.less';
+import MainWithStyle from './MainWithStyle';
+
+type LoginFormProps = {
+  onSubmit: (values: any) => Promise<void>;
+};
+
+const LoginForm: React.FC<LoginFormProps> = (props) => {
+  const { onSubmit } = props;
+
+  const [form] = ProForm.useForm();
+
+  const [submitting, setSubmitting] = useState(false);
+  const [ldapEnabled, setLdapEnabled] = useState(false);
+
+  useEffect(() => {
+    getData(API_CONSTANTS.GET_LDAP_ENABLE).then(
+      (res) => {
+        setLdapEnabled(res.data);
+        form.setFieldValue('ldapLogin', res.data);
+      },
+      (err) => console.error(err)
+    );
+  }, []);
+
+  const handleClickLogin = async () => {
+    setSubmitting(true);
+    await onSubmit({ ...form.getFieldsValue() });
+    setSubmitting(false);
+  };
+
+  const renderLoginForm = () => {
+    return (
+      <>
+        <ProFormText
+          name='username'
+          width={'md'}
+          fieldProps={{
+            size: 'large',
+            prefix: <UserOutlined />
+          }}
+          required
+          placeholder={l('login.username.placeholder')}
+          rules={[
+            {
+              required: true,
+              message: l('login.username.required')
+            }
+          ]}
+        />
+        <ProFormText.Password
+          name='password'
+          fieldProps={{
+            size: 'large',
+            prefix: <LockOutlined />
+          }}
+          placeholder={l('login.password.placeholder')}
+          rules={[
+            {
+              required: true,
+              message: l('login.password.required')
+            }
+          ]}
+        />
+        <Row>
+          <Col span={18}>
+            <ProFormCheckbox name='autoLogin'>{l('login.rememberMe')}</ProFormCheckbox>
+          </Col>
+          <Col span={6}>
+            <ProFormCheckbox name='ldapLogin' hidden={!ldapEnabled}>
+              {l('login.ldapLogin')}
+            </ProFormCheckbox>
+          </Col>
+        </Row>
+      </>
+    );
+  };
+
+  const proFormSubmitter: SubmitterProps = {
+    searchConfig: { submitText: l('menu.login') },
+    resetButtonProps: false,
+    submitButtonProps: {
+      loading: submitting,
+      autoFocus: true,
+      htmlType: 'submit',
+      size: 'large',
+      shape: 'round',
+      style: { width: '100%' }
+    }
+  };
+
+  return (
+    <MainWithStyle>
+      <FadeIn>
+        <ProForm
+          className={style.loginform}
+          form={form}
+          onFinish={handleClickLogin}
+          initialValues={{ autoLogin: true }}
+          submitter={{ ...proFormSubmitter }}
+        >
+          {renderLoginForm()}
+        </ProForm>
+      </FadeIn>
+    </MainWithStyle>
+  );
+};
+
+export default LoginForm;

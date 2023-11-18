@@ -26,7 +26,8 @@ logs.zip
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 .idea/*
-!.idea/icon.png
+!.idea/icon.svg
+!.idea/vcs.xml
 build
 target/*
 *.iml
@@ -34,11 +35,17 @@ target/*
 */target/*
 */*/target/*
 */*/*/target/*
-dlink-web/node_modules/*
-dlink-web/node/*
-dlink-web/dist/*
-dlink-web/.mfsu-production
+dlink-web/*
+
+# Dinky Web gitignore
+dinky-web/node_modules/*
+dinky-web/node/*
+dinky-web/dist/*
+dinky-web/.mfsu-production
+dinky-web/pnpm-lock.yaml
+
 dinky-admin/src/main/resources/static/*
+dinky-admin/tmp/*
 dependency-reduced-pom.xml
 
 # Dinky Docs gitignore
@@ -51,3 +58,4 @@ docs/yarn.lock
 docs/*.log
 tmp/*
 extends/*
+/.run/

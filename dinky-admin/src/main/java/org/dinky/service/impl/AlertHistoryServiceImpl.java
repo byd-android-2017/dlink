@@ -19,19 +19,56 @@
 
 package org.dinky.service.impl;
 
-import org.dinky.db.service.impl.SuperServiceImpl;
+import org.dinky.data.model.alert.AlertHistory;
 import org.dinky.mapper.AlertHistoryMapper;
-import org.dinky.model.AlertHistory;
+import org.dinky.mybatis.service.impl.SuperServiceImpl;
+import org.dinky.service.AlertGroupService;
 import org.dinky.service.AlertHistoryService;
 
-import org.springframework.stereotype.Service;
+import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * AlertHistoryServiceImpl
- *
- * @author wenmo
- * @since 2022/2/24 20:42
- */
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
+import lombok.RequiredArgsConstructor;
+
+/** AlertHistoryServiceImpl */
 @Service
+@RequiredArgsConstructor
 public class AlertHistoryServiceImpl extends SuperServiceImpl<AlertHistoryMapper, AlertHistory>
-        implements AlertHistoryService {}
+        implements AlertHistoryService {
+
+    private final AlertGroupService alertGroupService;
+
+    /**
+     * delete alert history by alert group id
+     *
+     * @param alertGroupId {@link Integer}
+     * @return {@link Boolean}
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteByAlertGroupId(Integer alertGroupId) {
+        List<AlertHistory> alertHistoryList = getBaseMapper()
+                .selectList(new LambdaQueryWrapper<AlertHistory>().eq(AlertHistory::getAlertGroupId, alertGroupId));
+        return baseMapper.deleteBatchIds(alertHistoryList) > 0;
+    }
+
+    /**
+     * @param jobInstanceId
+     * @return
+     */
+    @Override
+    public List<AlertHistory> queryAlertHistoryRecordByJobInstanceId(Integer jobInstanceId) {
+
+        return baseMapper
+                .selectList(new LambdaQueryWrapper<AlertHistory>().eq(AlertHistory::getJobInstanceId, jobInstanceId))
+                .stream()
+                .peek(alertHistory ->
+                        alertHistory.setAlertGroup(alertGroupService.getById(alertHistory.getAlertGroupId())))
+                .collect(Collectors.toList());
+    }
+}

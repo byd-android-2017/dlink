@@ -20,19 +20,22 @@
 package org.dinky.controller;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.common.result.ProTableResult;
-import org.dinky.common.result.Result;
-import org.dinky.constant.CommonConstant;
+import org.dinky.data.annotations.Log;
+import org.dinky.data.constant.CommonConstant;
+import org.dinky.data.constant.PermissionConstants;
+import org.dinky.data.dto.DataBaseDTO;
+import org.dinky.data.enums.BusinessType;
+import org.dinky.data.enums.Status;
+import org.dinky.data.model.Column;
+import org.dinky.data.model.DataBase;
+import org.dinky.data.model.QueryData;
+import org.dinky.data.model.Schema;
+import org.dinky.data.model.SqlGeneration;
+import org.dinky.data.result.Result;
 import org.dinky.metadata.driver.DriverPool;
 import org.dinky.metadata.result.JdbcSelectResult;
-import org.dinky.model.Column;
-import org.dinky.model.DataBase;
-import org.dinky.model.QueryData;
-import org.dinky.model.Schema;
-import org.dinky.model.SqlGeneration;
 import org.dinky.service.DataBaseService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.cache.annotation.CacheEvict;
@@ -46,108 +49,177 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaMode;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * DataBaseController
  *
- * @author wenmo
  * @since 2021/7/20 23:48
  */
 @Slf4j
 @RestController
+@Api(tags = "DataBase Controller")
 @RequestMapping("/api/database")
 @RequiredArgsConstructor
 public class DataBaseController {
 
     private final DataBaseService databaseService;
 
-    /** 新增或者更新 */
-    @PutMapping
-    public Result<Void> saveOrUpdate(@RequestBody DataBase database) {
-        if (databaseService.saveOrUpdateDataBase(database)) {
-            DriverPool.remove(database.getName());
-            return Result.succeed("更新成功");
+    /**
+     * save or update database
+     *
+     * @param dataBaseDTO {@link DataBaseDTO}
+     * @return {@link Result}< {@link Void}>
+     */
+    @PutMapping("/saveOrUpdate")
+    @Log(title = "Insert Or Update DataBase", businessType = BusinessType.INSERT_OR_UPDATE)
+    @ApiOperation("Insert Or Update DataBase")
+    @ApiImplicitParam(
+            name = "databaseDTO",
+            value = "DataBaseDTO",
+            required = true,
+            dataType = "DataBaseDTO",
+            paramType = "body",
+            dataTypeClass = DataBaseDTO.class)
+    @SaCheckPermission(
+            value = {PermissionConstants.REGISTRATION_DATA_SOURCE_ADD, PermissionConstants.REGISTRATION_DATA_SOURCE_EDIT
+            },
+            mode = SaMode.OR)
+    public Result<Void> saveOrUpdateDataBase(@RequestBody DataBaseDTO dataBaseDTO) {
+        if (databaseService.saveOrUpdateDataBase(dataBaseDTO)) {
+            DriverPool.remove(dataBaseDTO.getName());
+            return Result.succeed(Status.SAVE_SUCCESS);
         } else {
-            return Result.failed("更新失败");
+            return Result.failed(Status.SAVE_FAILED);
         }
     }
 
-    /** 动态查询列表 */
-    @PostMapping
-    public ProTableResult<DataBase> listDataBases(@RequestBody JsonNode para) {
-        return databaseService.selectForProTable(para);
+    /**
+     * get all database
+     *
+     * @param keyword {@link String}
+     * @return {@link Result}< {@link DataBase}>
+     */
+    @GetMapping("/list")
+    @ApiOperation("DataBase Get All")
+    public Result<List<DataBase>> listDataBases(@RequestParam(value = "keyword") String keyword) {
+        return Result.succeed(databaseService.selectListByKeyWord(keyword));
     }
 
-    /** 批量删除 */
-    @DeleteMapping
-    public Result<Void> deleteMul(@RequestBody JsonNode para) {
-        if (para.size() > 0) {
-            List<Integer> error = new ArrayList<>();
-            for (final JsonNode item : para) {
-                Integer id = item.asInt();
-                if (!databaseService.removeById(id)) {
-                    error.add(id);
-                }
-            }
-            if (error.size() == 0) {
-                return Result.succeed("删除成功");
-            } else {
-                return Result.succeed("删除部分成功，但" + error + "删除失败，共" + error.size() + "次失败。");
-            }
-        } else {
-            return Result.failed("请选择要删除的记录");
+    /**
+     * delete by id
+     *
+     * @param id {@link Integer}
+     * @return {@link Result}< {@link Void}>
+     */
+    @DeleteMapping("/delete")
+    @Log(title = "DataBase Delete By Id", businessType = BusinessType.DELETE)
+    @ApiOperation("DataBase Delete By Id")
+    @ApiImplicitParam(
+            name = "id",
+            value = "DataBase Id",
+            required = true,
+            dataType = "Integer",
+            paramType = "path",
+            dataTypeClass = Integer.class)
+    @SaCheckPermission(PermissionConstants.REGISTRATION_DATA_SOURCE_DELETE)
+    public Result<Void> deleteDataBaseById(@RequestParam Integer id) {
+        if (databaseService.removeById(id)) {
+            return Result.succeed(Status.DELETE_SUCCESS);
         }
+        return Result.failed(Status.DELETE_FAILED);
     }
 
-    /** 获取指定ID的信息 */
-    @PostMapping("/getOneById")
-    public Result<DataBase> getOneById(@RequestBody DataBase database) {
-        database = databaseService.getById(database.getId());
-        return Result.succeed(database, "获取成功");
+    /**
+     * enable or disable by id
+     *
+     * @param id {@link Integer}
+     * @return {@link Result}< {@link Void}>
+     */
+    @PutMapping("/enable")
+    @Log(title = "DataBase Enable Or Disable By Id", businessType = BusinessType.UPDATE)
+    @ApiOperation("DataBase Enable Or Disable By Id")
+    @ApiImplicitParam(
+            name = "id",
+            value = "DataBase Id",
+            required = true,
+            dataType = "Integer",
+            paramType = "path",
+            dataTypeClass = Integer.class)
+    @SaCheckPermission(PermissionConstants.REGISTRATION_DATA_SOURCE_EDIT)
+    public Result<Void> modifyDataSourceStatus(@RequestParam Integer id) {
+        if (databaseService.modifyDataSourceStatus(id)) {
+            return Result.succeed(Status.MODIFY_SUCCESS);
+        }
+        return Result.failed(Status.MODIFY_FAILED);
     }
 
-    /** 获取可用的数据库列表 */
+    /**
+     * get all enabled database
+     *
+     * @return {@link Result}< {@link List}< {@link DataBase}>>
+     */
     @GetMapping("/listEnabledAll")
+    @ApiOperation("Get All DataBase Enabled")
     public Result<List<DataBase>> listEnabledAll() {
         List<DataBase> dataBases = databaseService.listEnabledAll();
-        return Result.succeed(dataBases, "获取成功");
+        return Result.succeed(dataBases);
     }
 
-    /** 连接测试 */
+    /**
+     * test connect database
+     *
+     * @param dataBaseDTO {@link DataBaseDTO}
+     * @return {@link Result}< {@link Void}>
+     */
     @PostMapping("/testConnect")
-    public Result<Void> testConnect(@RequestBody DataBase database) {
-        String msg = databaseService.testConnect(database);
+    @Log(title = "DataBase Test Connect", businessType = BusinessType.TEST)
+    @ApiOperation("DataBase Test Connect")
+    @ApiImplicitParam(
+            name = "dataBaseDTO",
+            value = "DataBaseDTO",
+            required = true,
+            dataType = "DataBaseDTO",
+            paramType = "body",
+            dataTypeClass = DataBaseDTO.class)
+    public Result<Void> testConnect(@RequestBody DataBaseDTO dataBaseDTO) {
+        String msg = databaseService.testConnect(dataBaseDTO);
         boolean isHealthy = Asserts.isEquals(CommonConstant.HEALTHY, msg);
         if (isHealthy) {
-            return Result.succeed("数据源连接测试成功!");
+            return Result.succeed(Status.DATASOURCE_CONNECT_SUCCESS);
         } else {
             return Result.failed(msg);
         }
     }
 
-    /** 全部心跳监测 */
-    @PostMapping("/checkHeartBeats")
-    public Result<Void> checkHeartBeats() {
-        List<DataBase> dataBases = databaseService.listEnabledAll();
-        for (DataBase dataBase : dataBases) {
-            try {
-                databaseService.checkHeartBeat(dataBase);
-            } finally {
-                databaseService.updateById(dataBase);
-            }
-        }
-        return Result.succeed("状态刷新完成");
-    }
-
-    /** 心跳检测指定ID */
-    @GetMapping("/checkHeartBeatById")
-    public Result<Void> checkHeartBeatById(@RequestParam Integer id) {
+    /**
+     * heart beat check by id
+     *
+     * @param id {@link Integer}
+     * @return {@link Result}< {@link Void}>
+     */
+    @PutMapping("/checkHeartBeatByDataSourceId")
+    @Log(title = "DataBase Check Heart Beat By Id", businessType = BusinessType.TEST)
+    @ApiOperation("DataBase Check Heart Beat By Id")
+    @ApiImplicitParam(
+            name = "id",
+            value = "DataBase Id",
+            required = true,
+            dataType = "Integer",
+            paramType = "path",
+            dataTypeClass = Integer.class,
+            example = "1")
+    @SaCheckPermission(PermissionConstants.REGISTRATION_DATA_SOURCE_CHECK_HEARTBEAT)
+    public Result<Void> checkHeartBeatByDataSourceId(@RequestParam Integer id) {
         DataBase dataBase = databaseService.getById(id);
-        Asserts.checkNotNull(dataBase, "该数据源不存在！");
+        Asserts.checkNotNull(dataBase, Status.DATASOURCE_NOT_EXIST.getMessage());
         String error = "";
         try {
             databaseService.checkHeartBeat(dataBase);
@@ -158,70 +230,200 @@ public class DataBaseController {
         if (Asserts.isNotNullString(error)) {
             return Result.failed(error);
         }
-        return Result.succeed("数据源连接正常");
+        return Result.succeed(Status.DATASOURCE_CONNECT_NORMAL);
     }
 
-    /** 获取元数据的表 */
+    /**
+     * get all database of schemas and tables
+     *
+     * @param id {@link Integer}
+     * @return {@link Result}< {@link List}< {@link Schema}>>
+     */
     @Cacheable(cacheNames = "metadata_schema", key = "#id")
     @GetMapping("/getSchemasAndTables")
+    @ApiOperation("Get All Schemas And Tables")
+    @ApiImplicitParam(
+            name = "id",
+            value = "DataBase Id",
+            required = true,
+            dataType = "Integer",
+            paramType = "path",
+            dataTypeClass = Integer.class,
+            example = "1")
     public Result<List<Schema>> getSchemasAndTables(@RequestParam Integer id) {
-        return Result.succeed(databaseService.getSchemasAndTables(id), "获取成功");
+        return Result.succeed(databaseService.getSchemasAndTables(id));
     }
 
-    /** 清除元数据表的缓存 */
+    /**
+     * clear cache of schemas and tables
+     *
+     * @param id {@link Integer}
+     * @return {@link Result}< {@link String}>
+     */
     @CacheEvict(cacheNames = "metadata_schema", key = "#id")
     @GetMapping("/unCacheSchemasAndTables")
+    @ApiOperation("Clear Cache Of Schemas And Tables")
+    @ApiImplicitParam(
+            name = "id",
+            value = "DataBase Id",
+            required = true,
+            dataType = "Integer",
+            paramType = "path",
+            dataTypeClass = Integer.class,
+            example = "1")
     public Result<String> unCacheSchemasAndTables(@RequestParam Integer id) {
-        return Result.succeed("clear cache", "success");
+        return Result.succeed(Status.DATASOURCE_CLEAR_CACHE_SUCCESS);
     }
 
-    /** 获取元数据的指定表的列 */
+    /**
+     * get columns of table
+     *
+     * @param id         {@link Integer}
+     * @param schemaName {@link String}
+     * @param tableName  {@link String}
+     * @return {@link Result}< {@link List}< {@link Column}>>
+     */
     @GetMapping("/listColumns")
+    @ApiOperation("Get Columns Of Table")
+    @ApiImplicitParams(
+            value = {
+                @ApiImplicitParam(
+                        name = "id",
+                        value = "DataBase Id",
+                        required = true,
+                        dataType = "Integer",
+                        paramType = "path",
+                        dataTypeClass = Integer.class,
+                        example = "1"),
+                @ApiImplicitParam(
+                        name = "schemaName",
+                        value = "Schema Name",
+                        required = true,
+                        dataType = "String",
+                        paramType = "query",
+                        dataTypeClass = String.class,
+                        example = "public"),
+                @ApiImplicitParam(
+                        name = "tableName",
+                        value = "Table Name",
+                        required = true,
+                        dataType = "String",
+                        paramType = "query",
+                        dataTypeClass = String.class,
+                        example = "user")
+            })
     public Result<List<Column>> listColumns(
-            @RequestParam Integer id,
-            @RequestParam String schemaName,
-            @RequestParam String tableName) {
-        return Result.succeed(databaseService.listColumns(id, schemaName, tableName), "获取成功");
+            @RequestParam Integer id, @RequestParam String schemaName, @RequestParam String tableName) {
+        return Result.succeed(databaseService.listColumns(id, schemaName, tableName));
     }
 
-    /** 获取元数据的指定表的数据 */
+    /**
+     * query data of table
+     *
+     * @param queryData {@link QueryData}
+     * @return {@link Result}< {@link JdbcSelectResult}>
+     */
     @PostMapping("/queryData")
+    @ApiOperation("Query Data Of Table")
+    @ApiImplicitParam(
+            name = "queryData",
+            value = "Query Data",
+            required = true,
+            dataType = "QueryData",
+            paramType = "body",
+            dataTypeClass = QueryData.class)
     public Result<JdbcSelectResult> queryData(@RequestBody QueryData queryData) {
         JdbcSelectResult jdbcSelectResult = databaseService.queryData(queryData);
         if (jdbcSelectResult.isSuccess()) {
-            return Result.succeed(jdbcSelectResult, "获取成功");
+            return Result.succeed(jdbcSelectResult);
         } else {
-            return Result.failed(jdbcSelectResult, "查询失败");
+            return Result.failed();
         }
     }
 
-    /** 执行sql */
+    /**
+     * exec sql
+     *
+     * @param queryData {@link QueryData}
+     * @return {@link Result}< {@link JdbcSelectResult}>
+     */
     @PostMapping("/execSql")
+    @Log(title = "Exec Sql", businessType = BusinessType.EXECUTE)
+    @ApiOperation("Exec Sql")
+    @ApiImplicitParam(
+            name = "queryData",
+            value = "Query Data",
+            required = true,
+            dataType = "QueryData",
+            paramType = "body",
+            dataTypeClass = QueryData.class)
+    @SaCheckPermission(PermissionConstants.REGISTRATION_DATA_SOURCE_EXEC_SQL)
     public Result<JdbcSelectResult> execSql(@RequestBody QueryData queryData) {
         JdbcSelectResult jdbcSelectResult = databaseService.execSql(queryData);
         if (jdbcSelectResult.isSuccess()) {
-            return Result.succeed(jdbcSelectResult, "获取成功");
+            return Result.succeed(jdbcSelectResult);
         } else {
-            return Result.failed(jdbcSelectResult, "查询失败");
+            return Result.failed();
         }
     }
 
-    /** 获取 SqlGeneration */
+    /**
+     * get sql generation
+     *
+     * @param id         {@link Integer}
+     * @param schemaName {@link String}
+     * @param tableName  {@link String}
+     * @return {@link Result}< {@link SqlGeneration}>
+     */
     @GetMapping("/getSqlGeneration")
+    @ApiOperation("Get Sql Generation")
+    @ApiImplicitParams(
+            value = {
+                @ApiImplicitParam(
+                        name = "id",
+                        value = "DataBase Id",
+                        required = true,
+                        dataType = "Integer",
+                        paramType = "path",
+                        dataTypeClass = Integer.class,
+                        example = "1"),
+                @ApiImplicitParam(
+                        name = "schemaName",
+                        value = "Schema Name",
+                        required = true,
+                        dataType = "String",
+                        paramType = "query",
+                        dataTypeClass = String.class,
+                        example = "public"),
+                @ApiImplicitParam(
+                        name = "tableName",
+                        value = "Table Name",
+                        required = true,
+                        dataType = "String",
+                        paramType = "query",
+                        dataTypeClass = String.class,
+                        example = "user")
+            })
     public Result<SqlGeneration> getSqlGeneration(
-            @RequestParam Integer id,
-            @RequestParam String schemaName,
-            @RequestParam String tableName) {
-        return Result.succeed(databaseService.getSqlGeneration(id, schemaName, tableName), "获取成功");
+            @RequestParam Integer id, @RequestParam String schemaName, @RequestParam String tableName) {
+        return Result.succeed(databaseService.getSqlGeneration(id, schemaName, tableName));
     }
 
-    /** copyDatabase */
+    /**
+     * copy database
+     *
+     * @param dataBaseDTO {@link DataBaseDTO}
+     * @return {@link Result}< {@link Void}>
+     */
     @PostMapping("/copyDatabase")
-    public Result<Void> copyDatabase(@RequestBody DataBase database) {
-        if (databaseService.copyDatabase(database)) {
-            return Result.succeed("复制成功!");
+    @Log(title = "Copy Database", businessType = BusinessType.INSERT_OR_UPDATE)
+    @ApiOperation("Copy Database")
+    @SaCheckPermission(PermissionConstants.REGISTRATION_DATA_SOURCE_COPY)
+    public Result<Void> copyDatabase(@RequestBody DataBaseDTO dataBaseDTO) {
+        if (databaseService.copyDatabase(dataBaseDTO)) {
+            return Result.succeed(Status.COPY_SUCCESS);
         } else {
-            return Result.failed("复制失败！");
+            return Result.failed(Status.COPY_FAILED);
         }
     }
 }

@@ -19,12 +19,15 @@
 
 package org.dinky.daemon.task;
 
+import java.util.Objects;
+
+import lombok.Getter;
+
+@Getter
 public class DaemonTaskConfig {
 
-    private String type;
-    private Integer id;
-
-    public DaemonTaskConfig() {}
+    private final String type;
+    private final Integer id;
 
     public DaemonTaskConfig(String type, Integer id) {
         this.type = type;
@@ -35,19 +38,16 @@ public class DaemonTaskConfig {
         return new DaemonTaskConfig(type, id);
     }
 
-    public String getType() {
-        return type;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DaemonTaskConfig that = (DaemonTaskConfig) o;
+        return Objects.equals(type, that.type) && Objects.equals(id, that.id);
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, id);
     }
 }

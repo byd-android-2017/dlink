@@ -19,59 +19,41 @@
 
 package org.dinky.service;
 
-import org.dinky.dto.SqlDTO;
-import org.dinky.dto.StudioCADTO;
-import org.dinky.dto.StudioDDLDTO;
-import org.dinky.dto.StudioExecuteDTO;
-import org.dinky.dto.StudioMetaStoreDTO;
+import org.dinky.data.dto.StudioDDLDTO;
+import org.dinky.data.dto.StudioLineageDTO;
+import org.dinky.data.dto.StudioMetaStoreDTO;
+import org.dinky.data.model.Catalog;
+import org.dinky.data.model.Column;
+import org.dinky.data.model.Schema;
+import org.dinky.data.result.IResult;
+import org.dinky.data.result.SelectResult;
 import org.dinky.explainer.lineage.LineageResult;
-import org.dinky.job.JobResult;
-import org.dinky.model.Catalog;
-import org.dinky.model.FlinkColumn;
-import org.dinky.model.Schema;
-import org.dinky.result.IResult;
-import org.dinky.result.SelectResult;
-import org.dinky.result.SqlExplainResult;
+import org.dinky.metadata.result.JdbcSelectResult;
 
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * StudioService
  *
- * @author wenmo
  * @since 2021/5/30 11:07
  */
 public interface StudioService {
 
-    JobResult executeSql(StudioExecuteDTO studioExecuteDTO);
-
-    JobResult executeCommonSql(SqlDTO sqlDTO);
-
     IResult executeDDL(StudioDDLDTO studioDDLDTO);
 
-    List<SqlExplainResult> explainSql(StudioExecuteDTO studioExecuteDTO);
-
-    ObjectNode getStreamGraph(StudioExecuteDTO studioExecuteDTO);
-
-    ObjectNode getJobPlan(StudioExecuteDTO studioExecuteDTO);
+    JdbcSelectResult getCommonSqlData(Integer taskId);
 
     SelectResult getJobData(String jobId);
 
-    LineageResult getLineage(StudioCADTO studioCADTO);
+    LineageResult getLineage(StudioLineageDTO studioCADTO);
 
-    List<JsonNode> listJobs(Integer clusterId);
-
-    boolean cancel(Integer clusterId, String jobId);
-
-    boolean savepoint(
-            Integer taskId, Integer clusterId, String jobId, String savePointType, String name);
+    List<JsonNode> listFlinkJobs(Integer clusterId);
 
     List<Catalog> getMSCatalogs(StudioMetaStoreDTO studioMetaStoreDTO);
 
     Schema getMSSchemaInfo(StudioMetaStoreDTO studioMetaStoreDTO);
 
-    List<FlinkColumn> getMSFlinkColumns(StudioMetaStoreDTO studioMetaStoreDTO);
+    List<Column> getMSColumns(StudioMetaStoreDTO studioMetaStoreDTO);
 }

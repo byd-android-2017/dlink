@@ -27,10 +27,7 @@ import scala.runtime.BoxedUnit;
 import scala.tools.nsc.GenericRunnerSettings;
 import scala.tools.nsc.interpreter.IMain;
 
-/**
- * @author ZackYoung
- * @since 0.6.8
- */
+/** @since 0.6.8 */
 @Slf4j
 public class CustomStringScalaCompiler {
 
@@ -48,8 +45,7 @@ public class CustomStringScalaCompiler {
         GenericRunnerSettings settings = new GenericRunnerSettings(new ErrorHandler());
 
         settings.usejavacp().tryToSetFromPropertyValue("true");
-        settings.Yreploutdir()
-                .tryToSetFromPropertyValue(PathConstant.getUdfCompilerJavaPath(missionId));
+        settings.Yreploutdir().tryToSetFromPropertyValue(PathConstant.getUdfCompilerJavaPath(missionId));
         return new IMain(settings);
     }
 }

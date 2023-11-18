@@ -19,41 +19,37 @@
 
 package org.dinky.gateway.config;
 
-import org.dinky.assertion.Asserts;
-
-import lombok.Getter;
-import lombok.Setter;
-import lombok.With;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
 
 /**
  * AppConfig
  *
- * @author wenmo
  * @since 2021/11/3 21:55
  */
-@Setter
-@Getter
-@With
+@Data
+@ApiModel(value = "AppConfig", description = "Configuration for the Flink application")
 public class AppConfig {
 
+    @ApiModelProperty(
+            value = "Path to user JAR file",
+            dataType = "String",
+            example = "/path/to/user/app.jar",
+            notes = "Path to the user's application JAR file")
     private String userJarPath;
+
+    @ApiModelProperty(
+            value = "User JAR file parameters",
+            dataType = "String[]",
+            example = "[]",
+            notes = "Parameters to be passed to the user's application JAR file")
     private String[] userJarParas;
+
+    @ApiModelProperty(
+            value = "Main application class in the JAR file",
+            dataType = "String",
+            example = "com.example.MyAppMainClass",
+            notes = "Fully qualified class name of the main application class in the JAR file")
     private String userJarMainAppClass;
-
-    public AppConfig() {}
-
-    public AppConfig(String userJarPath, String[] userJarParas, String userJarMainAppClass) {
-        this.userJarPath = userJarPath;
-        this.userJarParas = userJarParas;
-        this.userJarMainAppClass = userJarMainAppClass;
-    }
-
-    public static AppConfig build(
-            String userJarPath, String userJarParasStr, String userJarMainAppClass) {
-        if (Asserts.isNotNullString(userJarParasStr)) {
-            return new AppConfig(userJarPath, userJarParasStr.split(" "), userJarMainAppClass);
-        } else {
-            return new AppConfig(userJarPath, new String[] {}, userJarMainAppClass);
-        }
-    }
 }

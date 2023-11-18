@@ -19,48 +19,55 @@
 
 package org.dinky.controller;
 
-import org.dinky.common.result.ProTableResult;
-import org.dinky.common.result.Result;
-import org.dinky.process.model.ProcessEntity;
-import org.dinky.service.ProcessService;
-
-import java.util.List;
+import org.dinky.context.ConsoleContextHolder;
+import org.dinky.data.model.ProcessEntity;
+import org.dinky.data.result.ProTableResult;
+import org.dinky.data.result.Result;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import cn.dev33.satoken.stp.StpUtil;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 
 /**
  * ProcessController
  *
- * @author wenmo
  * @since 2022/10/16 22:53
  */
 @RestController
+@Api(tags = "Process Controller")
 @RequestMapping("/api/process")
 @RequiredArgsConstructor
 public class ProcessController {
 
-    private final ProcessService processService;
-
+    /**
+     * List all process
+     *
+     * @param active true: list active process, false: list inactive process {@link Boolean}
+     * @return {@link ProTableResult}<{@link ProcessEntity}>
+     */
     @GetMapping("/listAllProcess")
+    @ApiOperation("List all process")
+    @ApiImplicitParam(
+            name = "active",
+            value = "true: list active process, false: list inactive process",
+            dataType = "Boolean")
     public ProTableResult<ProcessEntity> listAllProcess(@RequestParam boolean active) {
-        List<ProcessEntity> processEntities = processService.listAllProcess(active);
-        return ProTableResult.<ProcessEntity>builder().success(true).data(processEntities).build();
+        return ProTableResult.<ProcessEntity>builder()
+                .success(true)
+                .data(ConsoleContextHolder.getInstances().list())
+                .build();
     }
 
-    @GetMapping("/getConsoleByUserId")
-    public Result<String> getConsoleByUserId() {
-        return Result.data(processService.getConsoleByUserId(StpUtil.getLoginIdAsInt()));
-    }
-
-    @GetMapping("/clearConsole")
-    public Result<String> clearConsole() {
-        processService.clearConsoleByUserId(StpUtil.getLoginIdAsInt());
-        return Result.succeed("Clear succeed.");
+    @GetMapping("/getProcess")
+    @ApiOperation("get process")
+    @ApiImplicitParam(name = "processName", value = "process name", dataType = "ProcessEntity")
+    public Result<ProcessEntity> listAllProcess(@RequestParam String processName) {
+        return Result.succeed(ConsoleContextHolder.getInstances().getProcess(processName));
     }
 }

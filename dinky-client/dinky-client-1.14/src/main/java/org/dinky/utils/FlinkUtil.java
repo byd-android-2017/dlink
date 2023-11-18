@@ -33,7 +33,6 @@ import java.util.concurrent.ExecutionException;
 /**
  * FlinkUtil
  *
- * @author wenmo
  * @since 2021/10/22 10:02
  */
 public class FlinkUtil {
@@ -53,8 +52,7 @@ public class FlinkUtil {
         return tableResult.getResolvedSchema().getColumnNames();
     }
 
-    public static String triggerSavepoint(
-            ClusterClient clusterClient, String jobId, String savePoint)
+    public static String triggerSavepoint(ClusterClient clusterClient, String jobId, String savePoint)
             throws ExecutionException, InterruptedException {
         return clusterClient
                 .triggerSavepoint(JobID.fromHexString(jobId), savePoint)
@@ -62,8 +60,7 @@ public class FlinkUtil {
                 .toString();
     }
 
-    public static String stopWithSavepoint(
-            ClusterClient clusterClient, String jobId, String savePoint)
+    public static String stopWithSavepoint(ClusterClient clusterClient, String jobId, String savePoint)
             throws ExecutionException, InterruptedException {
         return clusterClient
                 .stopWithSavepoint(JobID.fromHexString(jobId), true, savePoint)
@@ -71,8 +68,7 @@ public class FlinkUtil {
                 .toString();
     }
 
-    public static String cancelWithSavepoint(
-            ClusterClient clusterClient, String jobId, String savePoint)
+    public static String cancelWithSavepoint(ClusterClient clusterClient, String jobId, String savePoint)
             throws ExecutionException, InterruptedException {
         return clusterClient
                 .cancelWithSavepoint(JobID.fromHexString(jobId), savePoint)

@@ -20,11 +20,12 @@
 package org.dinky.gateway.yarn;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.gateway.GatewayType;
+import org.dinky.context.FlinkUdfPathContextHolder;
+import org.dinky.data.model.SystemConfiguration;
 import org.dinky.gateway.config.AppConfig;
+import org.dinky.gateway.enums.GatewayType;
 import org.dinky.gateway.result.GatewayResult;
 import org.dinky.gateway.result.YarnResult;
-import org.dinky.model.SystemConfiguration;
 import org.dinky.utils.LogUtil;
 
 import org.apache.flink.client.deployment.ClusterSpecification;
@@ -36,15 +37,16 @@ import org.apache.flink.runtime.client.JobStatusMessage;
 import org.apache.flink.yarn.YarnClusterDescriptor;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * YarnApplicationGateway
  *
- * @author wenmo
  * @since 2021/10/29
  */
 public class YarnApplicationGateway extends YarnGateway {
@@ -61,13 +63,15 @@ public class YarnApplicationGateway extends YarnGateway {
         }
 
         AppConfig appConfig = config.getAppConfig();
-        configuration.set(
-                PipelineOptions.JARS, Collections.singletonList(appConfig.getUserJarPath()));
+        configuration.set(PipelineOptions.JARS, Collections.singletonList(appConfig.getUserJarPath()));
+        configuration.setString(
+                "python.files",
+                FlinkUdfPathContextHolder.getPyUdfFile().stream()
+                        .map(File::getName)
+                        .collect(Collectors.joining(",")));
 
         String[] userJarParas =
-                Asserts.isNotNull(appConfig.getUserJarParas())
-                        ? appConfig.getUserJarParas()
-                        : new String[0];
+                Asserts.isNotNull(appConfig.getUserJarParas()) ? appConfig.getUserJarParas() : new String[0];
 
         ClusterSpecification.ClusterSpecificationBuilder clusterSpecificationBuilder =
                 createClusterSpecificationBuilder();
@@ -76,12 +80,11 @@ public class YarnApplicationGateway extends YarnGateway {
 
         YarnResult result = YarnResult.build(getType());
         try (YarnClusterDescriptor yarnClusterDescriptor = createYarnClusterDescriptorWithJar()) {
-            ClusterClientProvider<ApplicationId> clusterClientProvider =
-                    yarnClusterDescriptor.deployApplicationCluster(
-                            clusterSpecificationBuilder.createClusterSpecification(),
-                            applicationConfiguration);
+            ClusterClientProvider<ApplicationId> clusterClientProvider = yarnClusterDescriptor.deployApplicationCluster(
+                    clusterSpecificationBuilder.createClusterSpecification(), applicationConfiguration);
             ClusterClient<ApplicationId> clusterClient = clusterClientProvider.getClusterClient();
-            Collection<JobStatusMessage> jobStatusMessages = clusterClient.listJobs().get();
+            Collection<JobStatusMessage> jobStatusMessages =
+                    clusterClient.listJobs().get();
 
             int counts = SystemConfiguration.getInstances().getJobIdWait();
             while (jobStatusMessages.size() == 0 && counts > 0) {

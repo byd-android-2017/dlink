@@ -39,7 +39,6 @@ public class PrintNetDynamicTableSink implements DynamicTableSink, SupportsParti
     private final int port;
     private final EncodingFormat<SerializationSchema<RowData>> encodingFormat;
     private final DataType type;
-    private final int parallelism;
     private final List<String> partitionKeys;
     private String printIdentifier;
     private ObjectIdentifier objectIdentifier;
@@ -51,14 +50,12 @@ public class PrintNetDynamicTableSink implements DynamicTableSink, SupportsParti
             EncodingFormat<SerializationSchema<RowData>> serializingFormat,
             String hostname,
             int port,
-            int parallelism,
             String printIdentifier,
             ObjectIdentifier objectIdentifier) {
         this.hostname = hostname;
         this.port = port;
         this.encodingFormat = serializingFormat;
         this.type = type;
-        this.parallelism = parallelism;
         this.partitionKeys = partitionKeys;
         this.printIdentifier = printIdentifier;
         this.objectIdentifier = objectIdentifier;
@@ -81,28 +78,19 @@ public class PrintNetDynamicTableSink implements DynamicTableSink, SupportsParti
             printIdentifier = objectIdentifier.asSerializableString();
         }
 
-        staticPartitions.forEach(
-                (key, value) -> {
-                    printIdentifier = null != printIdentifier ? printIdentifier + ":" : "";
-                    printIdentifier += key + "=" + value;
-                });
+        staticPartitions.forEach((key, value) -> {
+            printIdentifier = null != printIdentifier ? printIdentifier + ":" : "";
+            printIdentifier += key + "=" + value;
+        });
 
         return SinkFunctionProvider.of(
-                new PrintNetSinkFunction(hostname, port, serializer, converter, printIdentifier),
-                parallelism);
+                new PrintNetSinkFunction(hostname, port, serializer, converter, printIdentifier));
     }
 
     @Override
     public DynamicTableSink copy() {
         return new PrintNetDynamicTableSink(
-                type,
-                partitionKeys,
-                encodingFormat,
-                hostname,
-                port,
-                parallelism,
-                printIdentifier,
-                objectIdentifier);
+                type, partitionKeys, encodingFormat, hostname, port, printIdentifier, objectIdentifier);
     }
 
     @Override

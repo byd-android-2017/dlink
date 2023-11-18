@@ -19,31 +19,29 @@
 
 package org.dinky.service;
 
-import org.dinky.common.result.Result;
-import org.dinky.db.service.ISuperService;
-import org.dinky.dto.LoginDTO;
-import org.dinky.dto.ModifyPasswordDTO;
-import org.dinky.dto.UserDTO;
-import org.dinky.model.Role;
-import org.dinky.model.RoleSelectPermissions;
-import org.dinky.model.Tenant;
-import org.dinky.model.User;
-import org.dinky.params.AssignRoleParams;
+import org.dinky.data.dto.AssignRoleDTO;
+import org.dinky.data.dto.LoginDTO;
+import org.dinky.data.dto.ModifyPasswordDTO;
+import org.dinky.data.dto.UserDTO;
+import org.dinky.data.model.rbac.Role;
+import org.dinky.data.model.rbac.RowPermissions;
+import org.dinky.data.model.rbac.Tenant;
+import org.dinky.data.model.rbac.User;
+import org.dinky.data.result.Result;
+import org.dinky.data.vo.UserVo;
+import org.dinky.mybatis.service.ISuperService;
 
 import java.util.List;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * UserService
  *
- * @author wenmo
  * @since 2021/11/28 13:39
  */
 public interface UserService extends ISuperService<User> {
 
     /**
-     * registerUser
+     * register user
      *
      * @param user user
      * @return {@link Result}<{@link Void}>
@@ -51,7 +49,7 @@ public interface UserService extends ISuperService<User> {
     Result<Void> registerUser(User user);
 
     /**
-     * modifyUser
+     * modify user
      *
      * @param user user
      * @return {@link Boolean}
@@ -59,7 +57,7 @@ public interface UserService extends ISuperService<User> {
     Boolean modifyUser(User user);
 
     /**
-     * modifyPassword
+     * modify password
      *
      * @param modifyPasswordDTO {@link ModifyPasswordDTO}
      * @return {@link Result}<{@link Void}>
@@ -67,7 +65,7 @@ public interface UserService extends ISuperService<User> {
     Result<Void> modifyPassword(ModifyPasswordDTO modifyPasswordDTO);
 
     /**
-     * removeUser
+     * remove user
      *
      * @param id id
      * @return {@link Boolean}
@@ -75,15 +73,15 @@ public interface UserService extends ISuperService<User> {
     Boolean removeUser(Integer id);
 
     /**
-     * loginUser
+     * login user
      *
-     * @param loginDTO loginDTO
-     * @return {@link Result}<{@link UserDTO}>
+     * @param loginDTO basic information for user login
+     * @return {@link Result}{@link UserDTO} obtain the user's UserDTO
      */
     Result<UserDTO> loginUser(LoginDTO loginDTO);
 
     /**
-     * getUserByUsername
+     * get user by username
      *
      * @param username username
      * @return {@link User}
@@ -91,35 +89,25 @@ public interface UserService extends ISuperService<User> {
     User getUserByUsername(String username);
 
     /**
-     * grantRole will be {@link Deprecated} please use {@link
-     * UserService#assignRole(AssignRoleParams)}
+     * grant role
      *
-     * @param param param
+     * @param assignRoleDTO {@link AssignRoleDTO}
      * @return {@link Result}<{@link Void}>
      */
-    @Deprecated
-    Result<Void> grantRole(JsonNode param);
-
-    /**
-     * grantRole
-     *
-     * @param assignRoleParams {@link AssignRoleParams}
-     * @return {@link Result}<{@link Void}>
-     */
-    Result<Void> assignRole(AssignRoleParams assignRoleParams);
+    Result<Void> assignRole(AssignRoleDTO assignRoleDTO);
 
     /**
      * choose tenant
      *
      * @param tenantId
-     * @return {@link Result}<{@link Tenant}>
+     * @return {@link Result}{@link Tenant} the specified tenant
      */
     Result<Tenant> chooseTenant(Integer tenantId);
 
     /**
      * get current user base info
      *
-     * @return {@link Result}<{@link UserDTO}>
+     * @return {@link Result}{@link UserDTO} obtain the current user's UserDTO
      */
     Result<UserDTO> queryCurrentUserInfo();
 
@@ -129,7 +117,7 @@ public interface UserService extends ISuperService<User> {
      * @param id
      * @return {@link Boolean}
      */
-    Boolean enable(Integer id);
+    Boolean modifyUserStatus(Integer id);
 
     /**
      * check user is admin
@@ -137,7 +125,16 @@ public interface UserService extends ISuperService<User> {
      * @param id
      * @return {@link Boolean}
      */
-    Boolean checkAdmin(Integer id);
+    Boolean checkSuperAdmin(Integer id);
+
+    /**
+     * check user is tenant admin
+     *
+     * @param id
+     * @return {@link Boolean}
+     */
+    @Deprecated
+    Boolean checkTenantAdmin(Integer id);
 
     /**
      * get role by current user
@@ -151,5 +148,58 @@ public interface UserService extends ISuperService<User> {
      *
      * @return role select permissions list
      */
-    List<RoleSelectPermissions> getCurrentRoleSelectPermissions();
+    List<RowPermissions> getCurrentRoleSelectPermissions();
+
+    /**
+     * Builds row-level permissions.
+     *
+     */
+    void buildRowPermission();
+
+    /**
+     * User logout function.
+     *
+     */
+    void outLogin();
+
+    /**
+     * get user ids where user in given tenant id
+     *
+     * @return role select permissions list
+     */
+    List<Integer> getUserIdsByTenantId(int id);
+
+    /**
+     * Returns a list of users based on the provided tenant id.
+     *
+     * @param id The id of the tenant.
+     * @return A list of users that belong to the tenant with the provided id.
+     */
+    List<User> getUserListByTenantId(int id);
+
+    /**
+     * Modifies the user's role permissions based on the provided parameters.
+     *
+     * @param userId The id of the user to modify.
+     * @param tenantId The id of the tenant to modify.
+     * @param tenantAdminFlag Whether the user should be a tenant admin.
+     * @return A result object indicating the success or failure of the operation.
+     */
+    Result<Void> modifyUserToTenantAdmin(Integer userId, Integer tenantId, Boolean tenantAdminFlag);
+
+    /**
+     * Restores a user's account to its original status after it has been disabled or locked.
+     *
+     * @param userId The id of the user to restore.
+     * @return A result object indicating the success or failure of the operation.
+     */
+    Result<Void> recoveryUser(Integer userId);
+
+    /**
+     * Resets a user's password to a new value.
+     *
+     * @param userId The id of the user to reset password.
+     * @return A result object containing the user's new password.
+     */
+    Result<UserVo> resetPassword(Integer userId);
 }

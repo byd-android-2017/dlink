@@ -25,8 +25,8 @@ export default {
   'app.request.400':
     'There was an error in the request sent, and the server did not create or modify data. ',
   'app.request.401': 'The user does not have permission (token, username, password error). ',
-  'app.request.403': 'The user is authorized, but access is forbidden. ',
-  'app.request.404': 'The request sent was for a record that did not exist. ',
+  'app.request.403': 'Sorry, you are not authorized to access this page.',
+  'app.request.404': 'Sorry, the page you visited does not exist.',
   'app.request.405': 'The request method is not allowed. ',
   'app.request.406': 'The requested format is not available. ',
   'app.request.410':
@@ -37,12 +37,14 @@ export default {
   'app.request.503': 'The service is unavailable. ',
   'app.request.504': 'The gateway timed out. ',
 
-  'app.request.failed':' The request failed, please try again ',
-  'app.request.test.connection':' Testing connection ',
-  'app.request.heartbeat.connection':' Detecting heartbeat ',
-  'app.request.heartbeat.connection.success': 'The heartbeat of the data source is normal, and the detection time is: {time}',
-  'app.request.heartbeat.connection.failed':' The heartbeat of the data source is abnormal, and the detection time is: {time} ',
-  'app.request.upload.failed':' Upload failed. ',
+  'app.request.failed': ' The request failed, please try again ',
+  'app.request.test.connection': ' Testing connection ',
+  'app.request.heartbeat.connection': ' Detecting heartbeat ',
+  'app.request.heartbeat.connection.success':
+    'The heartbeat of the data source is normal, and the detection time is: {time}',
+  'app.request.heartbeat.connection.failed':
+    ' The heartbeat of the data source is abnormal, and the detection time is: {time} ',
+  'app.request.upload.failed': ' Upload failed. ',
   'app.request.update.setting.success': 'Modify the configuration successfully！',
   'app.request.error.try': 'Failed, please try again',
   'app.request.geterror.try': 'Get failed, please try again',
@@ -52,4 +54,6 @@ export default {
   'app.request.update': 'Modify',
   'app.request.running': 'Now is ',
   'app.request.test.alert.msg': 'Sending test alert message',
+  'app.request.loading': 'Loading...',
+  'app.request.back': 'Back Home'
 };

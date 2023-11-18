@@ -20,12 +20,13 @@
 package org.dinky.gateway;
 
 import org.dinky.assertion.Asserts;
+import org.dinky.data.enums.JobStatus;
 import org.dinky.gateway.config.GatewayConfig;
+import org.dinky.gateway.enums.GatewayType;
 import org.dinky.gateway.exception.GatewayException;
 import org.dinky.gateway.result.GatewayResult;
 import org.dinky.gateway.result.SavePointResult;
 import org.dinky.gateway.result.TestResult;
-import org.dinky.model.JobStatus;
 
 import org.apache.flink.runtime.jobgraph.JobGraph;
 
@@ -35,7 +36,6 @@ import java.util.ServiceLoader;
 /**
  * Submiter
  *
- * @author wenmo
  * @since 2021/10/29
  */
 public interface Gateway {

@@ -19,7 +19,7 @@
 
 package org.dinky.scheduler.client;
 
-import org.dinky.scheduler.config.DolphinSchedulerProperties;
+import org.dinky.data.model.SystemConfiguration;
 import org.dinky.scheduler.constant.Constants;
 import org.dinky.scheduler.model.Project;
 import org.dinky.scheduler.result.Result;
@@ -31,65 +31,80 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.http.HttpRequest;
 
-/**
- * 项目
- *
- * @author 郑文豪
- */
+/** 项目 */
 @Component
 public class ProjectClient {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskClient.class);
 
-    @Autowired private DolphinSchedulerProperties dolphinSchedulerProperties;
-
     /**
      * 创建项目
      *
      * @return {@link Project}
-     * @author 郑文豪
-     * @date 2022/9/7 16:57
      */
     public Project createDinkyProject() {
         Map<String, Object> map = new HashMap<>();
-        map.put("projectName", dolphinSchedulerProperties.getProjectName());
+        map.put(
+                "projectName",
+                SystemConfiguration.getInstances()
+                        .getDolphinschedulerProjectName()
+                        .getValue());
         map.put("description", "自动创建");
 
-        String content =
-                HttpRequest.post(dolphinSchedulerProperties.getUrl() + "/projects")
-                        .header(Constants.TOKEN, dolphinSchedulerProperties.getToken())
-                        .form(map)
-                        .timeout(5000)
-                        .execute()
-                        .body();
-        return MyJSONUtil.verifyResult(
-                MyJSONUtil.toBean(content, new TypeReference<Result<Project>>() {}));
+        String content = HttpRequest.post(SystemConfiguration.getInstances()
+                                .getDolphinschedulerUrl()
+                                .getValue()
+                        + "/projects")
+                .header(
+                        Constants.TOKEN,
+                        SystemConfiguration.getInstances()
+                                .getDolphinschedulerToken()
+                                .getValue())
+                .form(map)
+                .timeout(5000)
+                .execute()
+                .body();
+        return MyJSONUtil.verifyResult(MyJSONUtil.toBean(content, new TypeReference<Result<Project>>() {}));
     }
 
     /**
      * 查询项目
      *
      * @return {@link Project}
-     * @author 郑文豪
-     * @date 2022/9/7 16:57
      */
     public Project getDinkyProject() {
 
-        String content =
-                HttpRequest.get(dolphinSchedulerProperties.getUrl() + "/projects")
-                        .header(Constants.TOKEN, dolphinSchedulerProperties.getToken())
-                        .form(ParamUtil.getPageParams(dolphinSchedulerProperties.getProjectName()))
-                        .timeout(5000)
-                        .execute()
-                        .body();
+        String content = HttpRequest.get(SystemConfiguration.getInstances()
+                                .getDolphinschedulerUrl()
+                                .getValue()
+                        + "/projects")
+                .header(
+                        Constants.TOKEN,
+                        SystemConfiguration.getInstances()
+                                .getDolphinschedulerToken()
+                                .getValue())
+                .form(ParamUtil.getPageParams(SystemConfiguration.getInstances()
+                        .getDolphinschedulerProjectName()
+                        .getValue()))
+                .timeout(5000)
+                .execute()
+                .body();
 
-        return MyJSONUtil.toPageBeanAndFindByName(
-                content, dolphinSchedulerProperties.getProjectName(), Project.class);
+        try {
+            return MyJSONUtil.toPageBeanAndFindByName(
+                    content,
+                    SystemConfiguration.getInstances()
+                            .getDolphinschedulerProjectName()
+                            .getValue(),
+                    Project.class);
+        } catch (Exception e) {
+            SystemConfiguration.getInstances().getDolphinschedulerEnable().setValue(false);
+            throw new RuntimeException(content);
+        }
     }
 }

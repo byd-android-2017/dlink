@@ -22,7 +22,6 @@ package org.dinky.parser;
 /**
  * CreateCDCSourceSqlParser
  *
- * @author wenmo
  * @since 2022/1/29 23:39
  */
 public class CreateCDCSourceSqlParser extends BaseSingleSqlParser {
@@ -33,9 +32,7 @@ public class CreateCDCSourceSqlParser extends BaseSingleSqlParser {
 
     @Override
     protected void initializeSegments() {
-        segments.add(
-                new SqlSegment(
-                        "CDCSOURCE", "(execute\\s+cdcsource\\s+)(.+)(\\s+with\\s+\\()", "[,]"));
+        segments.add(new SqlSegment("CDCSOURCE", "(execute\\s+cdcsource\\s+)(.+)(\\s+with\\s+\\()", "[,]"));
         segments.add(new SqlSegment("WITH", "(with\\s+\\()(.+)(\\))", "',"));
     }
 }

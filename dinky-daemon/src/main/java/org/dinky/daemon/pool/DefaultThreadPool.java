@@ -22,6 +22,7 @@ package org.dinky.daemon.pool;
 import org.dinky.daemon.entity.TaskQueue;
 import org.dinky.daemon.entity.TaskWorker;
 import org.dinky.daemon.task.DaemonTask;
+import org.dinky.daemon.task.DaemonTaskConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author lcg
  * @operate
  * @return
  */
@@ -47,27 +47,22 @@ public class DefaultThreadPool implements ThreadPool {
 
     private final TaskQueue<DaemonTask> queue = new TaskQueue<>();
 
-    private static DefaultThreadPool defaultThreadPool;
-
     private DefaultThreadPool() {
         addWorkers(DEFAULT_WORKER_NUM);
     }
 
+    private static final class DefaultThreadPoolHolder {
+        private static final DefaultThreadPool defaultThreadPool = new DefaultThreadPool();
+    }
+
     public static DefaultThreadPool getInstance() {
-        if (defaultThreadPool == null) {
-            synchronized (DefaultThreadPool.class) {
-                if (defaultThreadPool == null) {
-                    defaultThreadPool = new DefaultThreadPool();
-                }
-            }
-        }
-        return defaultThreadPool;
+        return DefaultThreadPoolHolder.defaultThreadPool;
     }
 
     @Override
     public void execute(DaemonTask daemonTask) {
         if (daemonTask != null) {
-            queue.enqueue(daemonTask);
+            queue.addTask(daemonTask);
         }
     }
 
@@ -83,8 +78,7 @@ public class DefaultThreadPool implements ThreadPool {
             for (int i = 0; i < num; i++) {
                 TaskWorker worker = new TaskWorker(queue);
                 workers.add(worker);
-                Thread thread =
-                        new Thread(worker, "ThreadPool-Worker-" + workerNum.incrementAndGet());
+                Thread thread = new Thread(worker, "ThreadPool-Worker-" + workerNum.incrementAndGet());
                 thread.start();
             }
         }
@@ -126,6 +120,14 @@ public class DefaultThreadPool implements ThreadPool {
     @Override
     public int getTaskSize() {
         return queue.getTaskSize();
+    }
+
+    public DaemonTask getByTaskConfig(DaemonTaskConfig daemonTask) {
+        return queue.getByTaskConfig(daemonTask);
+    }
+
+    public DaemonTask removeByTaskConfig(DaemonTaskConfig daemonTask) {
+        return queue.removeByTaskConfig(daemonTask);
     }
 
     public int getWorkCount() {

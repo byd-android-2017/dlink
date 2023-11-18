@@ -19,12 +19,12 @@
 
 package org.dinky.metadata;
 
+import org.dinky.data.model.Column;
+import org.dinky.data.model.Schema;
 import org.dinky.metadata.driver.ClickHouseDriver;
 import org.dinky.metadata.driver.Driver;
 import org.dinky.metadata.driver.DriverConfig;
 import org.dinky.metadata.result.JdbcSelectResult;
-import org.dinky.model.Column;
-import org.dinky.model.Schema;
 
 import java.util.List;
 
@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 /**
  * ClickhouseTest
  *
- * @author heyang
  * @since 2022/4/21 1:06
  */
 @Ignore
@@ -70,7 +69,7 @@ public class ClickHouseTest {
     @Test
     public void schemaTest() {
         List<Schema> schemasAndTables = getDriver().getSchemasAndTables();
-        // LOGGER.info(JSONUtil.toJsonString(schemasAndTables));
+        // LOGGER.info(JsonUtils.toJsonString(schemasAndTables));
         // LOGGER.info("end...");
     }
 
@@ -79,7 +78,7 @@ public class ClickHouseTest {
     public void columnTest() {
         Driver driver = getDriver();
         List<Column> columns = driver.listColumns("xxx", "xxx");
-        // LOGGER.info(JSONUtil.toJsonString(columns));
+        // LOGGER.info(JsonUtils.toJsonString(columns));
         // LOGGER.info("end...");
     }
 
@@ -88,7 +87,7 @@ public class ClickHouseTest {
     public void queryTest() {
         Driver driver = getDriver();
         JdbcSelectResult query = driver.query("select * from xxx", 10);
-        // LOGGER.info(JSONUtil.toJsonString(query));
+        // LOGGER.info(JsonUtils.toJsonString(query));
         // LOGGER.info("end...");
     }
 }

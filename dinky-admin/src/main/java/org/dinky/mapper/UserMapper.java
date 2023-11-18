@@ -19,16 +19,21 @@
 
 package org.dinky.mapper;
 
-import org.dinky.db.mapper.SuperMapper;
-import org.dinky.model.User;
+import org.dinky.data.model.rbac.User;
+import org.dinky.mybatis.mapper.SuperMapper;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * UserMapper
  *
- * @author wenmo
  * @since 2021/11/28 13:36
  */
 @Mapper
-public interface UserMapper extends SuperMapper<User> {}
+public interface UserMapper extends SuperMapper<User> {
+
+    Integer queryAdminUserByTenant(@Param("tenantId") Integer tenantId);
+
+    Integer recoveryUser(@Param("id") Integer userId);
+}

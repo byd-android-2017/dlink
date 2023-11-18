@@ -19,26 +19,59 @@
 
 package org.dinky.service;
 
-import org.dinky.db.service.ISuperService;
+import org.dinky.data.dto.ClusterConfigurationDTO;
+import org.dinky.data.model.ClusterConfiguration;
+import org.dinky.gateway.model.FlinkClusterConfig;
 import org.dinky.gateway.result.TestResult;
-import org.dinky.model.ClusterConfiguration;
+import org.dinky.mybatis.service.ISuperService;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * ClusterConfigService
  *
- * @author wenmo
  * @since 2021/11/6 20:52
  */
 public interface ClusterConfigurationService extends ISuperService<ClusterConfiguration> {
 
+    /**
+     * Get the cluster configuration with the given ID.
+     *
+     * @param id The ID of the cluster configuration to get.
+     * @return A {@link ClusterConfiguration} object representing the found cluster configuration.
+     */
     ClusterConfiguration getClusterConfigById(Integer id);
 
-    List<ClusterConfiguration> listEnabledAll();
+    /**
+     * List all enabled cluster configurations.
+     *
+     * @return A list of {@link ClusterConfiguration} objects representing all enabled cluster configurations.
+     */
+    List<ClusterConfiguration> listEnabledAllClusterConfig();
 
-    Map<String, Object> getGatewayConfig(Integer id);
+    /**
+     * Get the Flink cluster configuration with the given ID.
+     *
+     * @param id The ID of the Flink cluster configuration to get.
+     * @return A {@link FlinkClusterConfig} object representing the found Flink cluster configuration.
+     */
+    FlinkClusterConfig getFlinkClusterCfg(Integer id);
 
-    TestResult testGateway(ClusterConfiguration clusterConfiguration);
+    /**
+     * Test the given cluster configuration.
+     *
+     * @param clusterConfigurationDTO A {@link ClusterConfigurationDTO} object representing the cluster configuration to test.
+     * @return A {@link TestResult} object representing the test results.
+     */
+    TestResult testGateway(ClusterConfigurationDTO clusterConfigurationDTO);
+
+    /**
+     * Modify the status of a cluster configuration based on its ID.
+     *
+     * @param id The ID of the cluster configuration to modify.
+     * @return A boolean value indicating whether the modification was successful.
+     */
+    Boolean modifyClusterConfigStatus(Integer id);
+
+    List<ClusterConfigurationDTO> selectListByKeyWord(String keyword);
 }

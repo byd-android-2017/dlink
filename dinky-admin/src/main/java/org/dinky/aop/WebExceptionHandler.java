@@ -19,14 +19,16 @@
 
 package org.dinky.aop;
 
-import org.dinky.common.result.Result;
-import org.dinky.exception.BusException;
-import org.dinky.model.CodeEnum;
-import org.dinky.utils.MessageResolverUtils;
+import org.dinky.data.enums.CodeEnum;
+import org.dinky.data.enums.Status;
+import org.dinky.data.exception.BusException;
+import org.dinky.data.result.Result;
+import org.dinky.utils.I18n;
 
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -37,43 +39,56 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import cn.dev33.satoken.exception.NotLoginException;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 
 /**
  * WebExceptionHandler
  *
- * @author wenmo
  * @since 2022/2/2 22:22
  */
-@ControllerAdvice
-@ResponseBody
+@RestControllerAdvice
 public class WebExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebExceptionHandler.class);
 
     @ExceptionHandler
     public Result<Void> busException(BusException e) {
-        if (StrUtil.isNotEmpty(e.getMsg())) {
-            return Result.failed(MessageResolverUtils.getMessages(e.getCode(), e.getErrorArgs()));
+        if (StrUtil.isEmpty(e.getMsg())) {
+            return Result.failed(I18n.getMessage(e.getCode(), e.getMessage()));
         }
         return Result.failed(e.getMsg());
     }
 
+    private static final Map<String, Status> ERR_CODE_MAPPING = MapUtil.<String, Status>builder()
+            .put(NotLoginException.NOT_TOKEN, Status.NOT_TOKEN)
+            .put(NotLoginException.INVALID_TOKEN, Status.INVALID_TOKEN)
+            .put(NotLoginException.TOKEN_TIMEOUT, Status.EXPIRED_TOKEN)
+            .put(NotLoginException.BE_REPLACED, Status.BE_REPLACED)
+            .put(NotLoginException.KICK_OUT, Status.KICK_OUT)
+            .put(NotLoginException.TOKEN_FREEZE, Status.TOKEN_FREEZED)
+            .put(NotLoginException.NO_PREFIX, Status.NO_PREFIX)
+            .build();
+
     @ExceptionHandler
-    public Result<Void> notLoginException(NotLoginException e) {
+    public Result<Void> notLoginException(NotLoginException notLoginException) {
         ServletRequestAttributes servletRequestAttributes =
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletResponse response = servletRequestAttributes.getResponse();
-        response.setStatus(CodeEnum.NOTLOGIN.getCode());
-        return Result.notLogin(MessageResolverUtils.getMessage("login.not.login"));
+        if (response != null) {
+            response.setStatus(CodeEnum.NOTLOGIN.getCode());
+        }
+
+        String type = notLoginException.getType();
+        Status status = ERR_CODE_MAPPING.getOrDefault(type, Status.NOT_TOKEN);
+        return Result.failed(status);
     }
 
     /**
@@ -94,22 +109,18 @@ public class WebExceptionHandler {
                 FieldError fieldError = (FieldError) errors.get(0);
                 if (StringUtils.isNotBlank(fieldError.getDefaultMessage())) {
                     return Result.failed(
-                            String.format(
-                                    "字段:%s, %s",
-                                    fieldError.getField(), fieldError.getDefaultMessage()));
+                            Status.GLOBAL_PARAMS_CHECK_ERROR, fieldError.getField(), fieldError.getDefaultMessage());
                 }
                 return Result.failed(
-                        String.format(
-                                "字段:%s,不合法的值:%s",
-                                fieldError.getField(), fieldError.getRejectedValue()));
+                        Status.GLOBAL_PARAMS_CHECK_ERROR_VALUE, fieldError.getField(), fieldError.getRejectedValue());
             }
         }
-        return Result.failed(MessageResolverUtils.getMessage("request.params.error"));
+        return Result.failed(Status.REQUEST_PARAMS_ERROR);
     }
 
     @ExceptionHandler
     public Result<Void> unknownException(Exception e) {
         logger.error("ERROR:", e);
-        return Result.failed(e.getMessage());
+        return Result.failed(Status.UNKNOWN_ERROR, (Object) e.getMessage());
     }
 }

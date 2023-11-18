@@ -33,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Operations
  *
- * @author wenmo
  * @since 2021/5/25 15:50
  */
 @Slf4j
@@ -52,29 +51,27 @@ public class Operations {
      */
     private static Operation[] getAllOperations() {
         Reflections reflections = new Reflections(Operation.class.getPackage().getName());
-        Set<Class<?>> operations = reflections.get(Scanners.SubTypes.of(Operation.class).asClass());
+        Set<Class<?>> operations =
+                reflections.get(Scanners.SubTypes.of(Operation.class).asClass());
 
         return operations.stream()
                 .filter(t -> !t.isInterface())
-                .map(
-                        t -> {
-                            try {
-                                return (Operation) t.getConstructor().newInstance();
-                            } catch (InstantiationException
-                                    | IllegalAccessException
-                                    | InvocationTargetException
-                                    | NoSuchMethodException e) {
-                                log.error(
-                                        String.format(
-                                                "getAllOperations error, class %s, err: %s", t, e));
-                                throw new RuntimeException(e);
-                            }
-                        })
+                .map(t -> {
+                    try {
+                        return (Operation) t.getConstructor().newInstance();
+                    } catch (InstantiationException
+                            | IllegalAccessException
+                            | InvocationTargetException
+                            | NoSuchMethodException e) {
+                        log.error(String.format("getAllOperations error, class %s, err: %s", t, e));
+                        throw new RuntimeException(e);
+                    }
+                })
                 .toArray(Operation[]::new);
     }
 
     public static SqlType getOperationType(String sql) {
-        String sqlTrim = sql.replaceAll(SQL_EMPTY_STR, "").trim().toUpperCase();
+        String sqlTrim = sql.replaceAll(SQL_EMPTY_STR, " ").trim().toUpperCase();
         return Arrays.stream(SqlType.values())
                 .filter(sqlType -> sqlType.match(sqlTrim))
                 .findFirst()

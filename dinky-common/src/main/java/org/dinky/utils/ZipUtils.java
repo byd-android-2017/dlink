@@ -33,10 +33,7 @@ import java.util.Enumeration;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * @author ZackYoung
- * @since 0.7.0
- */
+/** @since 0.7.0 */
 @Slf4j
 public class ZipUtils {
 
@@ -75,8 +72,6 @@ public class ZipUtils {
     public static void main(String[] args) throws IOException {
         // unzip("/Users/zackyoung/Downloads/85.zip", "/Users/zackyoung/Downloads/85");
 
-        Files.move(
-                Paths.get("/Users/zackyoung/Downloads/85/jar/"),
-                Paths.get("/Users/zackyoung/Downloads/85/123/"));
+        Files.move(Paths.get("/Users/zackyoung/Downloads/85/jar/"), Paths.get("/Users/zackyoung/Downloads/85/123/"));
     }
 }

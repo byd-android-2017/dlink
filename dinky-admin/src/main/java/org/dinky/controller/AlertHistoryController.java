@@ -19,82 +19,80 @@
 
 package org.dinky.controller;
 
-import org.dinky.common.result.ProTableResult;
-import org.dinky.common.result.Result;
-import org.dinky.model.AlertHistory;
+import org.dinky.data.annotations.Log;
+import org.dinky.data.enums.BusinessType;
+import org.dinky.data.enums.Status;
+import org.dinky.data.model.alert.AlertHistory;
+import org.dinky.data.result.Result;
 import org.dinky.service.AlertHistoryService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * AlertHistoryController
  *
- * @author wenmo
  * @since 2022/2/24 20:43
  */
 @Slf4j
 @RestController
+@Api(tags = "Alert History Controller")
 @RequestMapping("/api/alertHistory")
 @RequiredArgsConstructor
 public class AlertHistoryController {
 
     private final AlertHistoryService alertHistoryService;
 
-    /** 新增或者更新 */
-    @PutMapping
-    public Result<Void> saveOrUpdate(@RequestBody AlertHistory alertHistory) throws Exception {
-        if (alertHistoryService.saveOrUpdate(alertHistory)) {
-            return Result.succeed("新增成功");
+    /**
+     * Query Alert History By Job Instance Id
+     * @param jobInstanceId
+     * @return List<AlertHistory>
+     */
+    @GetMapping("/list")
+    @ApiOperation("Query Alert History")
+    @ApiImplicitParam(
+            name = "jobInstanceId",
+            value = "Query Alert History By Job Instance Id",
+            dataTypeClass = Integer.class,
+            required = true,
+            dataType = "Integer")
+    @Log(title = "Query Alert History", businessType = BusinessType.QUERY)
+    public Result<List<AlertHistory>> listAlertHistoryRecord(@RequestParam("jobInstanceId") Integer jobInstanceId) {
+        return Result.succeed(alertHistoryService.queryAlertHistoryRecordByJobInstanceId(jobInstanceId));
+    }
+
+    /**
+     * delete AlertInstance by id
+     *
+     * @param id {@link Integer}
+     * @return {@link Result} of {@link Void}
+     */
+    @DeleteMapping("/delete")
+    @Log(title = "Delete Alert History By Id", businessType = BusinessType.DELETE)
+    @ApiOperation("Delete Alert History By Id")
+    @ApiImplicitParam(
+            name = "id",
+            value = "Alert History Id",
+            dataType = "Integer",
+            paramType = "query",
+            required = true,
+            dataTypeClass = Integer.class)
+    public Result<Void> deleteAlertInstanceById(@RequestParam("id") Integer id) {
+        if (alertHistoryService.removeById(id)) {
+            return Result.succeed(Status.DELETE_SUCCESS);
         } else {
-            return Result.failed("新增失败");
+            return Result.failed(Status.DELETE_FAILED);
         }
-    }
-
-    /** 动态查询列表 */
-    @PostMapping
-    public ProTableResult<AlertHistory> listAlertHistory(@RequestBody JsonNode para) {
-        return alertHistoryService.selectForProTable(para);
-    }
-
-    /** 批量删除 */
-    @DeleteMapping
-    public Result<Void> deleteMul(@RequestBody JsonNode para) {
-        if (para.size() > 0) {
-            List<Integer> error = new ArrayList<>();
-            for (final JsonNode item : para) {
-                Integer id = item.asInt();
-                if (!alertHistoryService.removeById(id)) {
-                    error.add(id);
-                }
-            }
-            if (error.size() == 0) {
-                return Result.succeed("删除成功");
-            } else {
-                return Result.succeed("删除部分成功，但" + error + "删除失败，共" + error.size() + "次失败。");
-            }
-        } else {
-            return Result.failed("请选择要删除的记录");
-        }
-    }
-
-    /** 获取指定ID的信息 */
-    @PostMapping("/getOneById")
-    public Result<AlertHistory> getOneById(@RequestBody AlertHistory alertHistory)
-            throws Exception {
-        alertHistory = alertHistoryService.getById(alertHistory.getId());
-        return Result.succeed(alertHistory, "获取成功");
     }
 }

@@ -20,23 +20,23 @@
 package org.dinky.metadata.driver;
 
 import org.dinky.assertion.Asserts;
+import org.dinky.data.model.Column;
+import org.dinky.data.model.QueryData;
+import org.dinky.data.model.Table;
 import org.dinky.metadata.convert.ITypeConvert;
 import org.dinky.metadata.convert.PostgreSqlTypeConvert;
 import org.dinky.metadata.query.IDBQuery;
 import org.dinky.metadata.query.PostgreSqlQuery;
-import org.dinky.model.Column;
-import org.dinky.model.QueryData;
-import org.dinky.model.Table;
 import org.dinky.utils.TextUtil;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * PostgreSqlDriver
  *
- * @author wenmo
  * @since 2021/7/22 9:28
  */
 public class PostgreSqlDriver extends AbstractJdbcDriver {
@@ -98,15 +98,14 @@ public class PostgreSqlDriver extends AbstractJdbcDriver {
             }
         }
         if (Asserts.isNotNullString(table.getComment())) {
-            sb.append(
-                    " FROM \""
-                            + table.getSchema()
-                            + "\".\""
-                            + table.getName()
-                            + "\";"
-                            + " -- "
-                            + table.getComment()
-                            + "\n");
+            sb.append(" FROM \""
+                    + table.getSchema()
+                    + "\".\""
+                    + table.getName()
+                    + "\";"
+                    + " -- "
+                    + table.getComment()
+                    + "\n");
         } else {
             sb.append(" FROM \"" + table.getSchema() + "\".\"" + table.getName() + "\";\n");
         }
@@ -115,64 +114,42 @@ public class PostgreSqlDriver extends AbstractJdbcDriver {
 
     @Override
     public String getCreateTableSql(Table table) {
-        StringBuilder key = new StringBuilder();
-        StringBuilder sb = new StringBuilder();
-        StringBuilder comments = new StringBuilder();
+        String tableName = table.getName();
+        String schema = table.getSchema();
+        List<Column> columns = table.getColumns();
 
-        sb.append("CREATE TABLE \"")
-                .append(table.getSchema())
-                .append("\".\"")
-                .append(table.getName())
-                .append("\" (\n");
+        String columnDefinitions =
+                columns.stream().map(this::getColumnDefinition).collect(Collectors.joining(",\n"));
 
-        for (Column column : table.getColumns()) {
-            sb.append("  \"").append(column.getName()).append("\" ");
-            sb.append(column.getType());
-            if (column.getPrecision() > 0 && column.getScale() > 0) {
-                sb.append("(")
-                        .append(column.getLength())
-                        .append(",")
-                        .append(column.getScale())
-                        .append(")");
-            } else if (null != column.getLength()) { // 处理字符串类型
-                sb.append("(").append(column.getLength()).append(")");
-            }
-            if (column.isNullable() == true) {
-                sb.append(" NOT NULL");
-            }
-            if (Asserts.isNotNullString(column.getDefaultValue())
-                    && !column.getDefaultValue().contains("nextval")) {
-                sb.append(" DEFAULT ").append(column.getDefaultValue());
-            }
-            sb.append(",\n");
+        // comment table:COMMENT ON TABLE "schemaName"."tableName" IS 'comment';
+        String comment =
+                String.format("COMMENT ON TABLE \"%s\".\"%s\" IS '%s';\n", schema, tableName, table.getComment());
 
-            // 注释
-            if (Asserts.isNotNullString(column.getComment())) {
-                comments.append("COMMENT ON COLUMN \"")
-                        .append(table.getSchema())
-                        .append("\".\"")
-                        .append(table.getName())
-                        .append("\".\"")
-                        .append(column.getName())
-                        .append("\" IS '")
-                        .append(column.getComment())
-                        .append("';\n");
-            }
-        }
-        sb.deleteCharAt(sb.length() - 3);
+        // get primaryKeys
+        List<String> columnKeys = table.getColumns().stream()
+                .filter(Column::isKeyFlag)
+                .map(Column::getName)
+                .map(t -> String.format("\"%s\"", t))
+                .collect(Collectors.toList());
 
-        if (Asserts.isNotNullString(table.getComment())) {
-            comments.append("COMMENT ON TABLE \"")
-                    .append(table.getSchema())
-                    .append("\".\"")
-                    .append(table.getName())
-                    .append("\" IS '")
-                    .append(table.getComment())
-                    .append("';");
-        }
-        sb.append(");\n\n").append(comments);
+        // add primaryKey
+        String primaryKeyStr = columnKeys.isEmpty()
+                ? ""
+                : columnKeys.stream().collect(Collectors.joining(",", ", \n\tPRIMARY KEY (", ")\n"));
 
-        return sb.toString();
+        // CREATE TABLE "schemaName"."tableName" ( columnDefinitions ); comment
+        String ddl = String.format(
+                "CREATE TABLE \"%s\".\"%s\" (\n%s%s);\n%s",
+                schema, tableName, columnDefinitions, primaryKeyStr, comment);
+
+        ddl += columns.stream()
+                // COMMENT ON COLUMN "schemaName"."tableName"."columnName" IS 'comment'
+                .map(c -> String.format(
+                        "COMMENT ON COLUMN \"%s\".\"%s\".\"%s\" IS '%s';\n",
+                        schema, tableName, c.getName(), c.getComment()))
+                .collect(Collectors.joining());
+
+        return ddl;
     }
 
     @Override
@@ -183,12 +160,11 @@ public class PostgreSqlDriver extends AbstractJdbcDriver {
         String limitStart = queryData.getOption().getLimitStart();
         String limitEnd = queryData.getOption().getLimitEnd();
 
-        StringBuilder optionBuilder =
-                new StringBuilder()
-                        .append("select * from ")
-                        .append(queryData.getSchemaName())
-                        .append(".")
-                        .append(queryData.getTableName());
+        StringBuilder optionBuilder = new StringBuilder()
+                .append("select * from ")
+                .append(queryData.getSchemaName())
+                .append(".")
+                .append(queryData.getTableName());
 
         if (where != null && !where.equals("")) {
             optionBuilder.append(" where ").append(where);
@@ -206,5 +182,29 @@ public class PostgreSqlDriver extends AbstractJdbcDriver {
         optionBuilder.append(" offset ").append(limitStart).append(" limit ").append(limitEnd);
 
         return optionBuilder;
+    }
+
+    private String getColumnDefinition(Column column) {
+
+        String length = "";
+        if (null != column.getPrecision()
+                && column.getPrecision() > 0
+                && null != column.getScale()
+                && column.getScale() > 0) {
+            length = String.format("(%s,%s)", column.getPrecision(), column.getScale());
+        } else if (null != column.getLength()) {
+            length = String.format("(%s)", column.getLength());
+        }
+        // "columnName" type(length) null_able default_value
+        return String.format(
+                "\t\"%s\" %s%s%s%s",
+                column.getName(),
+                column.getType(),
+                length,
+                column.isNullable() ? "" : " NOT NULL",
+                Asserts.isNotNullString(column.getDefaultValue())
+                                && !column.getDefaultValue().contains("nextval")
+                        ? " DEFAULT " + column.getDefaultValue()
+                        : "");
     }
 }

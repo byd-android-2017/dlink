@@ -71,15 +71,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Factory for creating configured instances of {@link PulsarDynamicSource} and {
  *
- * @author DarrenDa
- * * @version 1.0
- * * @Desc:
+ * <p>* @version 1.0 * @Desc:
+ *
  * @link PulsarDynamicSink}.
  */
-
 @Internal
-public class PulsarDynamicTableFactory
-        implements DynamicTableSourceFactory, DynamicTableSinkFactory {
+public class PulsarDynamicTableFactory implements DynamicTableSourceFactory, DynamicTableSinkFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(PulsarDynamicTableFactory.class);
 
@@ -120,13 +117,11 @@ public class PulsarDynamicTableFactory
     public DynamicTableSource createDynamicTableSource(Context context) {
         // either implement your custom validation logic here ...
         // or use the provided helper utility
-        final TableFactoryHelper helper =
-                FactoryUtil.createTableFactoryHelper(this, context);
+        final TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
 
         // discover a suitable decoding format
         final DecodingFormat<DeserializationSchema<RowData>> decodingFormat =
-                helper.discoverDecodingFormat(
-                        DeserializationFormatFactory.class, FactoryUtil.FORMAT);
+                helper.discoverDecodingFormat(DeserializationFormatFactory.class, FactoryUtil.FORMAT);
 
         // validate all options
         // helper.validate();
@@ -160,15 +155,12 @@ public class PulsarDynamicTableFactory
                 producedDataType,
                 context.getObjectIdentifier().asSummaryString(),
                 getPulsarProperties(context.getCatalogTable().getOptions(), PROPERTIES_PREFIX),
-                sourceParallelism
-        );
+                sourceParallelism);
     }
 
     @Override
     public DynamicTableSink createDynamicTableSink(Context context) {
-        final TableFactoryHelper helper =
-                FactoryUtil.createTableFactoryHelper(
-                        this, context);
+        final TableFactoryHelper helper = FactoryUtil.createTableFactoryHelper(this, context);
 
         final ReadableConfig tableOptions = helper.getOptions();
         final String update_mode = tableOptions.get(UPDATE_MODE);
@@ -177,15 +169,14 @@ public class PulsarDynamicTableFactory
         helper.validateExcept(PROPERTIES_PREFIX, PROPERTIES_CLIENT_PREFIX);
 
         final EncodingFormat<SerializationSchema<RowData>> encodingFormat =
-                helper.discoverEncodingFormat(
-                        SerializationFormatFactory.class, FactoryUtil.FORMAT);
+                helper.discoverEncodingFormat(SerializationFormatFactory.class, FactoryUtil.FORMAT);
 
-        //校验sql建表时是否指定主键约束
-        //我们一般使用flink自动推导出来的主键，不显式设置主键约束，所以这个校验方法暂时不使用
-        //validatePKConstraints(update_mode, context.getObjectIdentifier(), context.getCatalogTable(), encodingFormat);
+        // 校验sql建表时是否指定主键约束
+        // 我们一般使用flink自动推导出来的主键，不显式设置主键约束，所以这个校验方法暂时不使用
+        // validatePKConstraints(update_mode, context.getObjectIdentifier(),
+        // context.getCatalogTable(), encodingFormat);
 
-        final DataType physicalDataType =
-                context.getCatalogTable().getSchema().toPhysicalRowDataType();
+        final DataType physicalDataType = context.getCatalogTable().getSchema().toPhysicalRowDataType();
 
         return createPulsarTableSink(
                 physicalDataType,
@@ -195,32 +186,28 @@ public class PulsarDynamicTableFactory
                 update_mode,
                 getPulsarProperties(context.getCatalogTable().getOptions(), PROPERTIES_PREFIX),
                 getPulsarProperties(context.getCatalogTable().getOptions(), PROPERTIES_CLIENT_PREFIX),
-                sinkParallelism
-        );
+                sinkParallelism);
     }
 
-    //校验sql建表时是否指定主键约束
+    // 校验sql建表时是否指定主键约束
     private static void validatePKConstraints(
             @Nullable String updateMode, ObjectIdentifier tableName, CatalogTable catalogTable, Format format) {
 
         if (!updateMode.equals("append") && !updateMode.equals("upsert")) {
-            throw new ValidationException(
-                    String.format(
-                            "The Pulsar table '%s' with update-mode should be 'append' or 'upsert'",
-                            tableName.asSummaryString()));
-        } else if (catalogTable.getSchema().getPrimaryKey().isPresent()
-                && updateMode.equals("append")) {
-            throw new ValidationException(
-                    String.format(
-                            "The Pulsar table '%s' with append update-mode doesn't support defining PRIMARY KEY constraint"
-                                    + " on the table, because it can't guarantee the semantic of primary key.",
-                            tableName.asSummaryString()));
-        } else if (!catalogTable.getSchema().getPrimaryKey().isPresent()
-                && updateMode.equals("upsert")) {
-            throw new ValidationException(
-                    "'upsert' tables require to define a PRIMARY KEY constraint. "
-                            + "The PRIMARY KEY specifies which columns should be read from or write to the Pulsar message key. "
-                            + "The PRIMARY KEY also defines records in the 'upsert' table should update or delete on which keys.");
+            throw new ValidationException(String.format(
+                    "The Pulsar table '%s' with update-mode should be 'append' or 'upsert'",
+                    tableName.asSummaryString()));
+        } else if (catalogTable.getSchema().getPrimaryKey().isPresent() && updateMode.equals("append")) {
+            throw new ValidationException(String.format(
+                    "The Pulsar table '%s' with append update-mode doesn't support"
+                            + " defining PRIMARY KEY constraint on the table, because it can't"
+                            + " guarantee the semantic of primary key.",
+                    tableName.asSummaryString()));
+        } else if (!catalogTable.getSchema().getPrimaryKey().isPresent() && updateMode.equals("upsert")) {
+            throw new ValidationException("'upsert' tables require to define a PRIMARY KEY constraint. The PRIMARY KEY"
+                    + " specifies which columns should be read from or write to the Pulsar"
+                    + " message key. The PRIMARY KEY also defines records in the 'upsert'"
+                    + " table should update or delete on which keys.");
         }
     }
 
@@ -243,5 +230,4 @@ public class PulsarDynamicTableFactory
                 pulsarClientProperties,
                 sinkParallelism);
     }
-
 }

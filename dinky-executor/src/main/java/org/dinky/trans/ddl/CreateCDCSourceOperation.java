@@ -19,18 +19,17 @@
 
 package org.dinky.trans.ddl;
 
-import static org.dinky.cdc.SinkBuilderFactory.buildSinkBuilder;
-
 import org.dinky.assertion.Asserts;
 import org.dinky.cdc.CDCBuilder;
 import org.dinky.cdc.CDCBuilderFactory;
 import org.dinky.cdc.SinkBuilder;
+import org.dinky.cdc.SinkBuilderFactory;
+import org.dinky.data.model.FlinkCDCConfig;
+import org.dinky.data.model.Schema;
+import org.dinky.data.model.Table;
 import org.dinky.executor.Executor;
 import org.dinky.metadata.driver.Driver;
 import org.dinky.metadata.driver.DriverConfig;
-import org.dinky.model.FlinkCDCConfig;
-import org.dinky.model.Schema;
-import org.dinky.model.Table;
 import org.dinky.trans.AbstractOperation;
 import org.dinky.trans.Operation;
 import org.dinky.utils.SplitUtil;
@@ -50,7 +49,6 @@ import java.util.stream.Collectors;
 /**
  * CreateCDCSourceOperation
  *
- * @author wenmo
  * @since 2022/1/29 23:25
  */
 public class CreateCDCSourceOperation extends AbstractOperation implements Operation {
@@ -77,42 +75,41 @@ public class CreateCDCSourceOperation extends AbstractOperation implements Opera
     public TableResult build(Executor executor) {
         logger.info("Start build CDCSOURCE Task...");
         CDCSource cdcSource = CDCSource.build(statement);
-        FlinkCDCConfig config =
-                new FlinkCDCConfig(
-                        cdcSource.getConnector(),
-                        cdcSource.getHostname(),
-                        cdcSource.getPort(),
-                        cdcSource.getUsername(),
-                        cdcSource.getPassword(),
-                        cdcSource.getCheckpoint(),
-                        cdcSource.getParallelism(),
-                        cdcSource.getDatabase(),
-                        cdcSource.getSchema(),
-                        cdcSource.getTable(),
-                        cdcSource.getStartupMode(),
-                        cdcSource.getSplit(),
-                        cdcSource.getDebezium(),
-                        cdcSource.getSource(),
-                        cdcSource.getSink(),
-                        cdcSource.getJdbc());
+        FlinkCDCConfig config = new FlinkCDCConfig(
+                cdcSource.getConnector(),
+                cdcSource.getHostname(),
+                cdcSource.getPort(),
+                cdcSource.getUsername(),
+                cdcSource.getPassword(),
+                cdcSource.getCheckpoint(),
+                cdcSource.getParallelism(),
+                cdcSource.getDatabase(),
+                cdcSource.getSchema(),
+                cdcSource.getTable(),
+                cdcSource.getStartupMode(),
+                cdcSource.getSplit(),
+                cdcSource.getDebezium(),
+                cdcSource.getSource(),
+                cdcSource.getSink(),
+                cdcSource.getSinks(),
+                cdcSource.getJdbc());
         try {
             CDCBuilder cdcBuilder = CDCBuilderFactory.buildCDCBuilder(config);
             Map<String, Map<String, String>> allConfigMap = cdcBuilder.parseMetaDataConfigs();
             config.setSchemaFieldName(cdcBuilder.getSchemaFieldName());
-            SinkBuilder sinkBuilder = buildSinkBuilder(config);
+            SinkBuilder sinkBuilder = SinkBuilderFactory.buildSinkBuilder(config);
             List<Schema> schemaList = new ArrayList<>();
             final List<String> schemaNameList = cdcBuilder.getSchemaList();
             final List<String> tableRegList = cdcBuilder.getTableList();
             final List<String> schemaTableNameList = new ArrayList<>();
             if (SplitUtil.isEnabled(cdcSource.getSplit())) {
                 DriverConfig driverConfig = DriverConfig.build(cdcBuilder.parseMetaDataConfig());
-                Driver driver = Driver.build(driverConfig);
+                Driver driver = Driver.buildNewConnection(driverConfig);
 
                 // 这直接传正则过去
-                schemaTableNameList.addAll(
-                        tableRegList.stream()
-                                .map(x -> x.replaceFirst("\\\\.", "."))
-                                .collect(Collectors.toList()));
+                schemaTableNameList.addAll(tableRegList.stream()
+                        .map(x -> x.replaceFirst("\\\\.", "."))
+                        .collect(Collectors.toList()));
 
                 Driver sinkDriver = checkAndCreateSinkSchema(config, schemaTableNameList.get(0));
 
@@ -154,19 +151,15 @@ public class CreateCDCSourceOperation extends AbstractOperation implements Opera
                             if (Asserts.isNotNullCollection(tableRegList)) {
                                 for (String tableReg : tableRegList) {
                                     if (table.getSchemaTableName().matches(tableReg.trim())
-                                            && !schema.getTables()
-                                                    .contains(Table.build(table.getName()))) {
-                                        table.setColumns(
-                                                driver.listColumnsSortByPK(
-                                                        schemaName, table.getName()));
+                                            && !schema.getTables().contains(Table.build(table.getName()))) {
+                                        table.setColumns(driver.listColumnsSortByPK(schemaName, table.getName()));
                                         schema.getTables().add(table);
                                         schemaTableNameList.add(table.getSchemaTableName());
                                         break;
                                     }
                                 }
                             } else {
-                                table.setColumns(
-                                        driver.listColumnsSortByPK(schemaName, table.getName()));
+                                table.setColumns(driver.listColumnsSortByPK(schemaName, table.getName()));
                                 schemaTableNameList.add(table.getSchemaTableName());
                                 schema.getTables().add(table);
                             }
@@ -185,40 +178,25 @@ public class CreateCDCSourceOperation extends AbstractOperation implements Opera
                 }
             }
 
-            logger.info("A total of " + schemaTableNameList.size() + " tables were detected...");
+            logger.info("A total of {} tables were detected...", schemaTableNameList.size());
             for (int i = 0; i < schemaTableNameList.size(); i++) {
-                logger.info((i + 1) + ": " + schemaTableNameList.get(i));
+                logger.info("{}: {}", i + 1, schemaTableNameList.get(i));
             }
             config.setSchemaTableNameList(schemaTableNameList);
             config.setSchemaList(schemaList);
-            StreamExecutionEnvironment streamExecutionEnvironment =
-                    executor.getStreamExecutionEnvironment();
+            StreamExecutionEnvironment streamExecutionEnvironment = executor.getStreamExecutionEnvironment();
             if (Asserts.isNotNull(config.getParallelism())) {
                 streamExecutionEnvironment.setParallelism(config.getParallelism());
-                logger.info("Set parallelism: " + config.getParallelism());
+                logger.info("Set parallelism: {}", config.getParallelism());
             }
             if (Asserts.isNotNull(config.getCheckpoint())) {
                 streamExecutionEnvironment.enableCheckpointing(config.getCheckpoint());
-                logger.info("Set checkpoint: " + config.getCheckpoint());
+                logger.info("Set checkpoint: {}", config.getCheckpoint());
             }
             DataStreamSource<String> streamSource = cdcBuilder.build(streamExecutionEnvironment);
-            logger.info("Build " + config.getType() + " successful...");
-            if (cdcSource.getSinks() == null || cdcSource.getSinks().size() == 0) {
-                sinkBuilder.build(
-                        cdcBuilder,
-                        streamExecutionEnvironment,
-                        executor.getCustomTableEnvironment(),
-                        streamSource);
-            } else {
-                for (Map<String, String> sink : cdcSource.getSinks()) {
-                    config.setSink(sink);
-                    sinkBuilder.build(
-                            cdcBuilder,
-                            streamExecutionEnvironment,
-                            executor.getCustomTableEnvironment(),
-                            streamSource);
-                }
-            }
+            logger.info("Build {} successful...", config.getType());
+            sinkBuilder.build(
+                    cdcBuilder, streamExecutionEnvironment, executor.getCustomTableEnvironment(), streamSource);
             logger.info("Build CDCSOURCE Task successful!");
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -233,16 +211,15 @@ public class CreateCDCSourceOperation extends AbstractOperation implements Opera
             return null;
         }
         String url = sink.get("url");
-        String schema =
-                SqlUtil.replaceAllParam(sink.get(FlinkCDCConfig.SINK_DB), "schemaName", schemaName);
-        Driver driver =
-                Driver.build(
-                        sink.get("connector"), url, sink.get("username"), sink.get("password"));
+        String schema = SqlUtil.replaceAllParam(sink.get(FlinkCDCConfig.SINK_DB), "schemaName", schemaName);
+        Driver driver = Driver.build(sink.get("connector"), url, sink.get("username"), sink.get("password"));
         if (null != driver && !driver.existSchema(schema)) {
             driver.createSchema(schema);
         }
         sink.put(FlinkCDCConfig.SINK_DB, schema);
-        sink.put("url", url + "/" + schema);
+        if (!url.contains(schema)) {
+            sink.put("url", url + "/" + schema);
+        }
         return driver;
     }
 

@@ -19,12 +19,12 @@
 
 package org.dinky.metadata;
 
+import org.dinky.data.model.Column;
+import org.dinky.data.model.Schema;
+import org.dinky.data.model.Table;
 import org.dinky.metadata.driver.Driver;
 import org.dinky.metadata.driver.DriverConfig;
 import org.dinky.metadata.result.JdbcSelectResult;
-import org.dinky.model.Column;
-import org.dinky.model.Schema;
-import org.dinky.model.Table;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 /**
  * MysqlTest
  *
- * @author wenmo
  * @since 2021/7/20 15:32
  */
 @Ignore
@@ -89,10 +88,9 @@ public class HiveTest {
     public void getDBSTest() {
         Driver driver = getDriver();
         List<Schema> schemasAndTables = driver.listSchemas();
-        schemasAndTables.forEach(
-                schema -> {
-                    LOGGER.info(schema.getName() + "\t\t" + schema.getTables().toString());
-                });
+        schemasAndTables.forEach(schema -> {
+            LOGGER.info(schema.getName() + "\t\t" + schema.getTables().toString());
+        });
         LOGGER.info("end...");
     }
 
@@ -102,10 +100,9 @@ public class HiveTest {
         Driver driver = getDriver();
         driver.execute("use odsp ");
         List<Table> tableList = driver.listTables(hiveDB);
-        tableList.forEach(
-                schema -> {
-                    LOGGER.info(schema.getName());
-                });
+        tableList.forEach(schema -> {
+            LOGGER.info(schema.getName());
+        });
         LOGGER.info("end...");
     }
 
@@ -113,11 +110,9 @@ public class HiveTest {
     @Test
     public void getColumnsByTableTest() {
         Driver driver = getDriver();
-        List<Column> columns =
-                driver.listColumns(hiveDB, "biz_college_planner_mysql_language_score_item");
+        List<Column> columns = driver.listColumns(hiveDB, "biz_college_planner_mysql_language_score_item");
         for (Column column : columns) {
-            LOGGER.info(
-                    column.getName() + " \t " + column.getType() + " \t " + column.getComment());
+            LOGGER.info(column.getName() + " \t " + column.getType() + " \t " + column.getComment());
         }
         LOGGER.info("end...");
     }
@@ -126,8 +121,7 @@ public class HiveTest {
     @Test
     public void getCreateTableTest() throws Exception {
         Driver driver = getDriver();
-        Table driverTable =
-                driver.getTable(hiveDB, "biz_college_planner_mysql_language_score_item");
+        Table driverTable = driver.getTable(hiveDB, "biz_college_planner_mysql_language_score_item");
         String createTableSql = driver.getCreateTableSql(driverTable);
         LOGGER.info(createTableSql);
         LOGGER.info("end...");
@@ -139,32 +133,29 @@ public class HiveTest {
         Driver driver = getDriver();
         Table driverTable = driver.getTable(hiveDB, "employees");
         for (Column column : driverTable.getColumns()) {
-            LOGGER.info(
-                    column.getName() + "\t\t" + column.getType() + "\t\t" + column.getComment());
+            LOGGER.info(column.getName() + "\t\t" + column.getType() + "\t\t" + column.getComment());
         }
     }
 
     /**
      * @Author: zhumingye
      *
-     * @date: 202/3/23 @Description: 测试hive多条SQL执行 @Param:
      * @return:
      */
     @Ignore
     @Test
     public void multipleSQLTest() throws Exception {
         Driver driver = getDriver();
-        String sql =
-                "select\n"
-                        + "   date_format(create_time,'yyyy-MM') as  pay_success_time,\n"
-                        + "   sum(pay_amount)/100 as amount\n"
-                        + "from\n"
-                        + "    odsp.pub_pay_mysql_pay_order\n"
-                        + "    group by date_format(create_time,'yyyy-MM') ;\n"
-                        + "select\n"
-                        + "   *\n"
-                        + "from\n"
-                        + "    odsp.pub_pay_mysql_pay_order ;";
+        String sql = "select\n"
+                + "   date_format(create_time,'yyyy-MM') as  pay_success_time,\n"
+                + "   sum(pay_amount)/100 as amount\n"
+                + "from\n"
+                + "    odsp.pub_pay_mysql_pay_order\n"
+                + "    group by date_format(create_time,'yyyy-MM') ;\n"
+                + "select\n"
+                + "   *\n"
+                + "from\n"
+                + "    odsp.pub_pay_mysql_pay_order ;";
         JdbcSelectResult selectResult = driver.executeSql(sql, 100);
         for (LinkedHashMap<String, Object> rowDatum : selectResult.getRowData()) {
             Set<Map.Entry<String, Object>> entrySet = rowDatum.entrySet();

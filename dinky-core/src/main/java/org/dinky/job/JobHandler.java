@@ -19,14 +19,13 @@
 
 package org.dinky.job;
 
-import org.dinky.exception.JobException;
+import org.dinky.data.exception.JobException;
 
 import java.util.ServiceLoader;
 
 /**
  * jobHandler
  *
- * @author wenmo
  * @since 2021/6/26 23:22
  */
 public interface JobHandler {
@@ -50,7 +49,6 @@ public interface JobHandler {
         for (JobHandler jobHandler : jobHandlers) {
             return jobHandler;
         }
-        throw new JobException(
-                "There is no corresponding implementation class for this interface!");
+        throw new JobException("There is no corresponding implementation class for this interface!");
     }
 }

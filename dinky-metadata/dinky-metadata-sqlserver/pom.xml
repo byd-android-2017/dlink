@@ -21,7 +21,8 @@
     <parent>
         <groupId>org.dinky</groupId>
         <artifactId>dinky-metadata</artifactId>
-        <version>0.8.0</version>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>dinky-metadata-sqlserver</artifactId>
 
@@ -42,7 +43,7 @@
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
-            <!--            <scope>test</scope>-->
+            <scope>${scope.runtime}</scope>
         </dependency>
 
     </dependencies>

@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutionException;
 /**
  * FlinkUtil
  *
- * @author wenmo
  * @since 2022/05/08
  */
 public class FlinkUtil {
@@ -55,32 +54,26 @@ public class FlinkUtil {
         return tableResult.getResolvedSchema().getColumnNames();
     }
 
-    public static String triggerSavepoint(
-            ClusterClient clusterClient, String jobId, String savePoint)
+    public static String triggerSavepoint(ClusterClient clusterClient, String jobId, String savePoint)
             throws ExecutionException, InterruptedException {
         return clusterClient
-                .triggerSavepoint(
-                        JobID.fromHexString(jobId), savePoint, SavepointFormatType.DEFAULT)
+                .triggerSavepoint(JobID.fromHexString(jobId), savePoint, SavepointFormatType.DEFAULT)
                 .get()
                 .toString();
     }
 
-    public static String stopWithSavepoint(
-            ClusterClient clusterClient, String jobId, String savePoint)
+    public static String stopWithSavepoint(ClusterClient clusterClient, String jobId, String savePoint)
             throws ExecutionException, InterruptedException {
         return clusterClient
-                .stopWithSavepoint(
-                        JobID.fromHexString(jobId), true, savePoint, SavepointFormatType.DEFAULT)
+                .stopWithSavepoint(JobID.fromHexString(jobId), true, savePoint, SavepointFormatType.DEFAULT)
                 .get()
                 .toString();
     }
 
-    public static String cancelWithSavepoint(
-            ClusterClient clusterClient, String jobId, String savePoint)
+    public static String cancelWithSavepoint(ClusterClient clusterClient, String jobId, String savePoint)
             throws ExecutionException, InterruptedException {
         return clusterClient
-                .cancelWithSavepoint(
-                        JobID.fromHexString(jobId), savePoint, SavepointFormatType.DEFAULT)
+                .cancelWithSavepoint(JobID.fromHexString(jobId), savePoint, SavepointFormatType.DEFAULT)
                 .get()
                 .toString();
     }

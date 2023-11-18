@@ -19,7 +19,7 @@
 
 package org.dinky.context;
 
-import org.dinky.dto.UserDTO;
+import org.dinky.data.dto.UserDTO;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +31,10 @@ public class UserInfoContextHolder {
 
     public static void set(Integer userId, UserDTO userInfo) {
         USER_INFO.put(userId, userInfo);
+    }
+
+    public static void remove(Integer userId) {
+        USER_INFO.remove(userId);
     }
 
     public static UserDTO get(Integer userId) {

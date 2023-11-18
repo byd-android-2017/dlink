@@ -19,32 +19,24 @@
 
 package org.dinky.service;
 
-import org.dinky.model.FileNode;
+import org.dinky.data.dto.TreeNodeDTO;
+import org.dinky.data.model.ext.FileNode;
 
 import java.util.List;
 
 /**
  * SystemService
  *
- * @author wenmo
  * @since 2022/10/15 19:16
  */
 public interface SystemService {
-
-    /**
-     * list all dir and file by dir path
-     *
-     * @param path
-     * @return {@link List<FileNode>}
-     */
-    List<FileNode> listDirByPath(String path);
 
     /**
      * List log root dir.
      *
      * @return {@link List<FileNode>}
      */
-    List<FileNode> listLogDir();
+    List<TreeNodeDTO> listLogDir();
 
     /**
      * readFile

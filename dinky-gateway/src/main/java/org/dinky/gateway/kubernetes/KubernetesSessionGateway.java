@@ -20,7 +20,7 @@
 package org.dinky.gateway.kubernetes;
 
 import org.dinky.assertion.Asserts;
-import org.dinky.gateway.GatewayType;
+import org.dinky.gateway.enums.GatewayType;
 import org.dinky.gateway.result.GatewayResult;
 import org.dinky.gateway.result.KubernetesResult;
 import org.dinky.utils.LogUtil;
@@ -33,7 +33,6 @@ import org.apache.flink.kubernetes.KubernetesClusterDescriptor;
 /**
  * KubernetesSessionGateway
  *
- * @author wenmo
  * @since 2022/12/25 23:25
  */
 public class KubernetesSessionGateway extends KubernetesGateway {
@@ -49,16 +48,14 @@ public class KubernetesSessionGateway extends KubernetesGateway {
             init();
         }
 
-        combineFlinkConfig();
         ClusterSpecification.ClusterSpecificationBuilder clusterSpecificationBuilder =
                 createClusterSpecificationBuilder();
 
         KubernetesResult result = KubernetesResult.build(getType());
         try (KubernetesClusterDescriptor kubernetesClusterDescriptor =
                 new KubernetesClusterDescriptor(configuration, client)) {
-            ClusterClientProvider<String> clusterClientProvider =
-                    kubernetesClusterDescriptor.deploySessionCluster(
-                            clusterSpecificationBuilder.createClusterSpecification());
+            ClusterClientProvider<String> clusterClientProvider = kubernetesClusterDescriptor.deploySessionCluster(
+                    clusterSpecificationBuilder.createClusterSpecification());
             ClusterClient<String> clusterClient = clusterClientProvider.getClusterClient();
             result.setId(clusterClient.getClusterId());
             result.setWebURL(clusterClient.getWebInterfaceURL());

@@ -24,14 +24,13 @@ import java.util.List;
 /**
  * GatewayResult
  *
- * @author wenmo
  * @since 2021/10/29 15:39
  */
 public interface GatewayResult {
 
     String getId();
 
-    void setId(String id);
+    GatewayResult setId(String id);
 
     String getWebURL();
 

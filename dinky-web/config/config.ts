@@ -30,12 +30,12 @@ export default defineConfig({
    * doc description: https://juejin.cn/post/7153525746751766559
    * issue: https://www.github.com/ant-design/ant-design-pro/issues/10550
    */
- /* keepalive: [/./],
-  tabsLayout: {
-     hasDropdown: true, // Whether there is a drop-down menu
-     hasCustomTabs: true, // Whether there are custom tabs
-     hasFixedHeader: true, // Whether there is a fixed header
-  },*/
+  /* keepalive: [/./],
+   tabsLayout: {
+      hasDropdown: true, // Whether there is a drop-down menu
+      hasCustomTabs: true, // Whether there are custom tabs
+      hasFixedHeader: true, // Whether there is a fixed header
+   },*/
 
   /**
    * @name 开启 hash 模式
@@ -43,17 +43,18 @@ export default defineConfig({
    * @doc https://umijs.org/docs/api/config#hash
    */
   hash: true,
+  esbuildMinifyIIFE: true,
   history: {
-    type: 'hash',
+    type: 'hash'
   },
   /**
    * @name 兼容性设置
    * @description 设置 ie11 不一定完美兼容，需要检查自己使用的所有依赖
    * @doc https://umijs.org/docs/api/config#targets
    */
-  targets: {
-    ie: 11,
-  },
+  // targets: {
+  //   ie: 11,
+  // },
   /**
    * @name 路由的配置，不在路由中引入的文件不会编译
    * @description 只支持 path，component，routes，redirect，wrappers，title 的配置
@@ -70,7 +71,7 @@ export default defineConfig({
   theme: {
     // 如果不想要 configProvide 动态设置主题需要把这个设置为 default
     // 只有设置为 variable， 才能使用 configProvide 动态设置主色调
-    'root-entry-name': 'variable',
+    'root-entry-name': 'variable'
   },
   /**
    * @name moment 的国际化配置
@@ -110,7 +111,7 @@ export default defineConfig({
   title: 'Dinky',
   layout: {
     locale: true,
-    ...defaultSettings,
+    ...defaultSettings
   },
   /**
    * @name moment2dayjs 插件
@@ -119,7 +120,7 @@ export default defineConfig({
    */
   moment2dayjs: {
     preset: 'antd',
-    plugins: ['duration'],
+    plugins: ['duration']
   },
   /**
    * @name 国际化插件
@@ -130,8 +131,15 @@ export default defineConfig({
     default: 'zh-CN',
     antd: true,
     // default true, when it is true, will use `navigator.language` overwrite default
-    baseNavigator: true,
+    baseNavigator: false,
+    useLocalStorage: true
   },
+
+  /**
+   *  @name styled-components 插件
+   */
+  // styledComponents: {},
+
   /**
    * @name antd 插件
    * @description 内置了 babel import 插件
@@ -143,7 +151,9 @@ export default defineConfig({
    * @description 它基于 axios 和 ahooks 的 useRequest 提供了一套统一的网络请求和错误处理方案。
    * @doc https://umijs.org/docs/max/request
    */
-  request: {},
+  request: {
+    dataField: 'data'
+  },
   /**
    * @name 权限插件
    * @description 基于 initialState 的权限插件，必须先打开 initialState
@@ -156,7 +166,7 @@ export default defineConfig({
    */
   headScripts: [
     // 解决首次加载时白屏的问题
-    { src: '/scripts/loading.js', async: true },
+    { src: '/scripts/loading.js', async: true }
   ],
   //================ pro 插件配置 =================
   presets: ['umi-presets-pro'],
@@ -171,16 +181,17 @@ export default defineConfig({
       // 或者使用在线的版本
       // schemaPath: "https://gw.alipayobjects.com/os/antfincdn/M%24jrzTTYJN/oneapi.json"
       schemaPath: join(__dirname, 'oneapi.json'),
-      mock: false,
+      mock: false
     },
     {
       requestLibPath: "import { request } from '@umijs/max'",
       schemaPath: 'https://gw.alipayobjects.com/os/antfincdn/CA1dOm%2631B/openapi.json',
-      projectName: 'swagger',
-    },
+      projectName: 'swagger'
+    }
   ],
   mfsu: {
-    strategy: 'normal',
+    strategy: 'normal'
   },
-  requestRecord: {},
+  // requestRecord: {},
+  dva: {}
 });
